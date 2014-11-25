@@ -1,6 +1,6 @@
-proj ='L93'
+proj =L93
 EPSG_out =2154
-chaine_proj = 'EPSG:2154'
+chaine_proj = EPSG:2154
 tx_min=0
 ty_min=0
 tx_max=0
