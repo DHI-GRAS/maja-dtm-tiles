@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
+import os, os.path
 import numpy as np
 import scipy.ndimage as nd
 from osgeo import gdal
@@ -23,22 +23,24 @@ def lire_param_txt(fic_txt):
 
 ############################
 class classe_site :
-    def __init__(self,proj,EPSG_out,chaine_proj,tx_min,tx_max,ty_min,ty_max,pas_x,pas_y,marge,orig_x,orig_y):
-		self.proj=proj
-		self.EPSG_out=EPSG_out
-		self.chaine_proj=chaine_proj
-		self.tx_min=tx_min
-		self.tx_max=tx_max
-		self.ty_min=ty_min
-		self.ty_max=tx_max
-		self.pas_x=pas_x
-		self.pas_y=pas_y
-		self.marge=marge
-		self.orig_x=orig_x
-		self.orig_y=orig_y
+    def __init__(self,nom,proj,EPSG_out,chaine_proj,tx_min,tx_max,ty_min,ty_max,pas_x,pas_y,marge,orig_x,orig_y):
+	self.nom=nom
+	self.proj=proj
+	self.EPSG_out=EPSG_out
+	self.chaine_proj=chaine_proj
+	self.tx_min=tx_min
+	self.tx_max=tx_max
+	self.ty_min=ty_min
+	self.ty_max=tx_max
+	self.pas_x=pas_x
+	self.pas_y=pas_y
+	self.marge=marge
+	self.orig_x=orig_x
+	self.orig_y=orig_y
 
 ############################ Lecture du fichier site
 def lire_fichier_site(fic_site):
+    nom=os.path.basename(fic_site).split('.')[0]
     with file(fic_site, 'r') as f:
 	for ligne in f.readlines() :
 	    if ligne.find('proj')==0:
@@ -66,7 +68,7 @@ def lire_fichier_site(fic_site):
 		orig_x = int(ligne.split('=')[1])
 	    if ligne.find('orig_y')==0:
 		orig_y = int(ligne.split('=')[1])
-    site=classe_site(proj,EPSG_out,chaine_proj,tx_min,tx_max,ty_min,ty_max,pas_x,pas_y,marge,orig_x,orig_y)
+    site=classe_site(nom,proj,EPSG_out,chaine_proj,tx_min,tx_max,ty_min,ty_max,pas_x,pas_y,marge,orig_x,orig_y)
     return(site)
 
 ###############################################lecture de l'entete envi
@@ -122,10 +124,18 @@ def calcule_nom_tuile(tx,ty,site,nom_site):
 
     nom_tuile = "%s%s%04d%s%04d" % (nom_site,GD, numx,HB, numy)
     return(nom_tuile)
+
+
+
+    
+
+ 
+    
+
+
 #############################################################
 ###########################Classe MNT########################
 #############################################################"""
-
 
 class classe_mnt :
 	def __init__(self,rep,rac,ulx,uly,lrx,lry,res,chaine_proj):
@@ -165,68 +175,124 @@ class classe_mnt :
 		f.write('>>\tTYPE_CONV\t0\n')
 		f.write('>>\tREF\tWGS84:G-D/GRS80:Z-M\n')
 		f.close()
+
+	#############################################################
+	########################Interface GDAL#######################
+	#############################################################
+
+	def decoupe_float(self,fic_in,fic_out):
+                #calcul du mnt float
+		chaine_etendue 	= str(self.ulx)+' '+str(self.lry)+' '+str(self.lrx)+' '+str(self.uly)
+		commande='gdalwarp  -overwrite -r cubic -ot Float32 -srcnodata -32768 -dstnodata 0 -of ENVI -tr %d %d -te %s -t_srs %s %s %s\n'% (self.res,self.res,chaine_etendue,self.chaine_proj,fic_in,fic_out)
+		print commande
+		os.system(commande)
+		
+
+	def decoupe_int(self,fic_in,fic_out):
+                #calcul du mnt int
+		chaine_etendue 	= str(self.ulx)+' '+str(self.lry)+' '+str(self.lrx)+' '+str(self.uly)
+		commande='gdalwarp  -overwrite -r cubic -srcnodata -32768 -dstnodata 0 -of ENVI -tr %d %d -te %s -t_srs %s %s %s\n'% (self.res,self.res,chaine_etendue,self.chaine_proj,fic_in,fic_out)
+		print commande
+		os.system(commande)
+
 	#############################################################
 	########################Decoupage MNT########################
 	#############################################################
 
 	def decoupe(self,mnt_in):
+	        print "###decoupage "+ str(self.res)+'m'
 		rac_mnt= self.racine+'_'+str(self.res) +'m'
 		fic_hdr_mnt=rac_mnt +'.hdr'
 		fic_mnt    =rac_mnt +'.mnt'
 		fic_hdr_mnt_float=rac_mnt +'float.hdr'
 		fic_mnt_float    =rac_mnt +'float.mnt'
+		
 
 		#calcul du mnt int
-		chaine_etendue 	= str(self.ulx)+' '+str(self.lry)+' '+str(self.lrx)+' '+str(self.uly)
-		commande='gdalwarp -r cubic -srcnodata -32768 -dstnodata 0 -of ENVI -tr %d %d -te %s -t_srs %s %s %s\n'% (self.res,self.res,chaine_etendue,self.chaine_proj,mnt_in,fic_mnt)
-		print commande
-		os.system(commande)
+		self.decoupe_int(mnt_in,fic_mnt)
 
                 #calcul du mnt float
-		chaine_etendue 	= str(self.ulx)+' '+str(self.lry)+' '+str(self.lrx)+' '+str(self.uly)
-		commande='gdalwarp -r cubic -ot Float32 -srcnodata -32768 -dstnodata 0 -of ENVI -tr %d %d -te %s -t_srs %s %s %s\n'% (self.res,self.res,chaine_etendue,self.chaine_proj,mnt_in,fic_mnt_float)
-		print commande
-		os.system(commande)
-		
-		
-		(nblig,nbcol,type_donnee,endian)=lire_entete_mnt(fic_hdr_mnt)
-
-		
+		self.decoupe_float(mnt_in,fic_mnt_float)		
 		
 		#ecriture des entetes babel
+		(nblig,nbcol,type_donnee,endian)=lire_entete_mnt(fic_hdr_mnt)
+
 		self.ecrit_hd(nblig ,nbcol)
 		self.ecrit_hd_babel(nblig ,nbcol)
 		
 		cmd = 'ln -s ' + fic_mnt+" " + rac_mnt + '.c1'
 		os.system(cmd)
-		
-		###########################################################
-		######### Calcul des pentes################################
-		###########################################################
-		(nblig,nbcol,type_donnee,endian)=lire_entete_mnt(fic_hdr_mnt_float)
 
-		mnt=(np.fromfile(fic_mnt_float,type_donnee)).reshape(nblig,nbcol).astype('Float32')
-		print 'moyenne du mnt ',mnt.mean()
+	#############################################################
+	########################Reech gradient########################
+	#############################################################
+
+	def reech_gradient(self,fic_dz_dl_srtm,fic_dz_dc_srtm):
+		rac_mnt      = self.racine+'_'+str(self.res) +'m'
+		fic_dz_dl    =rac_mnt +'float.dz_dl'
+		fic_dz_dc    =rac_mnt +'float.dz_dc'
 		
-		Noyau_horizontal=np.array([	[-1,0,1],
-									[-2,0,2],
-									[-1,0,1]])
-		Noyau_vertical  =np.array([	[1,2,1],
-									[0,0,0],
-									[-1,-2,-1]])
+		#rééch
+		self.decoupe_float(fic_dz_dl_srtm,fic_dz_dl)
+		self.decoupe_float(fic_dz_dc_srtm,fic_dz_dc)
+		
 
 		
-		dz_dc=nd.convolve(mnt,Noyau_horizontal)/8./self.res
-		dz_dl=nd.convolve(mnt,Noyau_vertical)/8./self.res
-		norme=np.sqrt((dz_dc)*(dz_dc)+(dz_dl)*(dz_dl))
-		slope =np.arctan(norme)
-		aspect=np.where(dz_dc>0,np.arccos(dz_dl/norme),2*np.pi-np.arccos(dz_dl/norme)) 
-		aspect=np.where(slope==0,0,aspect)
+	###########################################################
+	######### calcul du gradient################################
+	###########################################################
 		
-		(dz_dc*100.) .astype('int16').tofile(rac_mnt+'.dz_dc')
-		(dz_dl*100.) .astype('int16').tofile(rac_mnt+'.dz_dl')
-		(slope*100.) .astype('int16').tofile(rac_mnt+'.slope')
-		(aspect*100.).astype('int16').tofile(rac_mnt+'.aspect')
+	def calcul_gradient(self):
+	    rac_mnt   = self.racine+'_'+str(self.res) +'m'
+	    print rac_mnt
+	    fic_mnt   = rac_mnt +'float.mnt'
+	    fic_hdr   = rac_mnt +'float.hdr'
+	    fic_dz_dl = rac_mnt +'float.dz_dl'
+	    fic_dz_dc = rac_mnt +'float.dz_dc'
+	    (nblig,nbcol,type_donnee,endian)=lire_entete_mnt(fic_hdr)
+
+	    srtm=(np.fromfile(fic_mnt,type_donnee)).reshape(nblig,nbcol)
+	    Noyau_horizontal=np.array([	[-1,0,1],[-2,0,2],[-1,0,1]])
+	    Noyau_vertical  =np.array([	[1,2,1] ,[0,0,0] ,[-1,-2,-1]])		
+	    
+	    dz_dc=nd.convolve(srtm,Noyau_horizontal)/8./self.res
+	    dz_dl=nd.convolve(srtm,Noyau_vertical)/8./self.res
+
+	    dz_dl.tofile(fic_dz_dl)
+	    dz_dc.tofile(fic_dz_dc)
+	    return(fic_dz_dl,fic_dz_dc)
+    
+	#############################################################
+	########################Calcul_pentes########################
+	#############################################################
+
+
+
+
+	def calcul_pente_aspect_fic(self):
+	    rac_mnt   = self.racine+'_'+str(self.res) +'m'
+    	    print rac_mnt
+
+	    fic_hdr   = rac_mnt +'float.hdr'
+	    fic_dz_dl = rac_mnt +'float.dz_dl'
+	    fic_dz_dc = rac_mnt +'float.dz_dc'
+
+	    (nblig,nbcol,type_donnee,endian)=lire_entete_mnt(fic_hdr)
+	    print nblig*nbcol*2
+	    #dz_dl=(np.fromfile(fic_dz_dl,type_donnee)).reshape(nblig,nbcol).astype('int16')
+	    #dz_dc=(np.fromfile(fic_dz_dc,type_donnee)).reshape(nblig,nbcol).astype('int16')
+
+	    dz_dl=(np.fromfile(fic_dz_dl,type_donnee)).reshape(nblig,nbcol)
+	    dz_dc=(np.fromfile(fic_dz_dc,type_donnee)).reshape(nblig,nbcol)
+
+	    norme=np.sqrt((dz_dc)*(dz_dc)+(dz_dl)*(dz_dl))
+	    slope =np.arctan(norme)
+	    aspect=np.where(dz_dc>0,np.arccos(dz_dl/norme),2*np.pi-np.arccos(dz_dl/norme)) 
+	    aspect=np.where(slope==0,0,aspect)
+	    
+	    (slope*100.) .astype('int16').tofile(rac_mnt+'.slope')
+	    (aspect*100.).astype('int16').tofile(rac_mnt+'.aspect')
+
 
         #############################################################
 	########################Decoupage EAU########################
@@ -239,16 +305,22 @@ class classe_mnt :
 
 		#calcul du mnt int
 		chaine_etendue 	= str(self.ulx)+' '+str(self.lry)+' '+str(self.lrx)+' '+str(self.uly)
-		commande='gdalwarp  -r cubic -of ENVI -tr %d %d -te %s -t_srs %s %s %s\n'% (self.res,self.res,chaine_etendue,self.chaine_proj,eau_in,fic_eau)
+		commande='gdalwarp -overwrite  -r near -of ENVI -tr %d %d -te %s -t_srs %s %s %s\n'% (self.res,self.res,chaine_etendue,self.chaine_proj,eau_in,fic_eau)
 		print commande
 		os.system(commande)
 
- 
 
-#############################################################
-###########################Fusion des Mnt########################
-#############################################################"""
+
+ 
+########################################################################
+###########################Fusion des Mnt CGIAR ########################
+########################################################################"""
 def fusion_srtm(liste_fic_srtm,liste_fic_eau,rep_srtm,rep_swbd,nom_site) :
+        for fic in liste_fic_srtm:
+	    if not (os.path.exists(rep_srtm+'/'+fic)):
+		ficzip=fic.replace('tif','zip')
+		commande = "unzip -o %s/%s -d %s"%(rep_srtm,ficzip,rep_srtm)
+		os.system(commande)
 	if len(liste_fic_srtm)>1:
 		nom_mnt=rep_srtm+"/mnt_"+nom_site+".tif"
 		commande="gdal_merge.py -o "+ nom_mnt
@@ -288,24 +360,118 @@ def fusion_srtm(liste_fic_srtm,liste_fic_eau,rep_srtm,rep_swbd,nom_site) :
         ds_out=None
         
         #remplissage de ce fichier avec les fichiers SWBD
+	liste_tuiles_manquantes=["e017n03","e006n30","e006n29","e005n30","e005n29","e015n00","e015s24","e022n28","e023n28","w074n01","e034n02","e035n02"]
         for racine_nom_eau in liste_fic_eau:
                 print racine_nom_eau
                 shp = glob.glob(rep_swbd+'/'+racine_nom_eau+"*.shp")
+		valeur=1
                 if len(shp) == 0:
                     print 'pas de fichier eau : ', racine_nom_eau
-                    fic_vecteur_eau=rep_swbd+'/'+racine_nom_eau+".gml"
-                    creer_fichier_eau(fic_vecteur_eau,racine_nom_eau)
+		    fic_vecteur_eau=rep_swbd+'/'+racine_nom_eau+".gml"
+		    if racine_nom_eau in liste_tuiles_manquantes :
+			valeur=0
+		        # pour les tuiles manquantes à l'intérieur des terre, on fournit la valeur 0 (terre)
+
+		    creer_fichier_eau(fic_vecteur_eau,racine_nom_eau)
+
                 else:
                     fic_vecteur_eau = shp[0]
                     # in faut recuperer pour la couche le nom complet (y compris la lettre indiquant le continent)
                     racine_nom_eau = os.path.basename(fic_vecteur_eau)[:-4]
-                commande="gdal_rasterize -burn 1 -l %s %s %s"%(racine_nom_eau,fic_vecteur_eau,nom_raster_swbd)
+                commande="gdal_rasterize -burn %d -l %s %s %s"%(valeur,racine_nom_eau,fic_vecteur_eau,nom_raster_swbd)
                 print "#############Fichier eau :",fic_vecteur_eau
                 print commande
                 os.system(commande)
 
 	return nom_mnt_nodata0,nom_raster_swbd
 
+
+#################################################################################
+###########################Fusion des Mnt Planet Observer########################
+##########################################################################
+def fusion_mnt(liste_fic_mnt,liste_fic_eau,rep_mnt,rep_swbd,nom_site) :
+        print liste_fic_mnt
+        for fic in liste_fic_mnt:
+	    print rep_mnt+'/'+fic
+	    if not (os.path.exists(rep_mnt+'/'+fic)):
+		ficzip=fic.replace('tif','zip')
+		commande = "unzip -o %s/%s -d %s"%(rep_mnt,ficzip,rep_mnt)
+		os.system(commande)
+	if len(liste_fic_mnt)>1:
+	    nom_mnt=rep_mnt+"/mnt_"+nom_site+".tif"
+	    commande="gdal_merge.py -o "+ nom_mnt
+	    for fic_mnt in liste_fic_mnt:
+		commande=commande+" "+rep_mnt+fic_mnt+" "
+	    if os.path.exists(nom_mnt):
+		os.remove(nom_mnt)
+	    print commande
+	    os.system(commande)
+	
+	elif len(liste_fic_mnt)==1: 
+	    nom_mnt=rep_mnt+liste_fic_mnt[0]
+	else :
+	    print "liste_fic_mnt est vide"
+	    raise ("ErreurDeParametreSite")
+	
+	########################on créé aussi le mnt avec no_data=0
+	nom_mnt_nodata0=nom_mnt.replace(".tif","nodata0.tif")
+	commande='gdalwarp  -r cubic -srcnodata -32767 -dstnodata 0  %s %s\n'% (nom_mnt,nom_mnt_nodata0)
+	print commande
+	os.system(commande)
+
+        # Création d'un fichier vide (valeurs à 0) avec la même emprise que le mnt fusionnné
+        ####################################################################################
+        nom_raster_swbd=rep_swbd+'/'+os.path.basename(nom_mnt).split('.tif')[0]+"_tmp.tif"
+        if os.path.exists(nom_raster_swbd):
+            os.remove(nom_raster_swbd)   
+        ds=gdal.Open(nom_mnt)
+        driver = gdal.GetDriverByName('GTiff')
+        ds_out = driver.CreateCopy(nom_raster_swbd, ds, 0 )
+        inband  = ds.GetRasterBand(1)
+        outband = ds_out.GetRasterBand(1)
+        for i in range(inband.YSize - 1, -1, -1):
+           scanline = inband.ReadAsArray(0, i, inband.XSize, 1, inband.XSize, 1)
+           scanline = scanline*0
+           outband.WriteArray(scanline, 0, i)
+        ds_out=None
+        
+        #remplissage de ce fichier avec les fichiers SWBD
+	liste_tuiles_manquantes=["e017n03","e006n30","e006n29","e005n30","e005n29","e015n00","e015s24","e022n28","e023n28","w074n01","e034n02","e035n02"]
+        for racine_nom_eau in liste_fic_eau:
+                print racine_nom_eau
+                shp = glob.glob(rep_swbd+'/'+racine_nom_eau+"*.shp")
+		valeur=1
+                if len(shp) == 0:
+                    print 'pas de fichier eau : ', racine_nom_eau
+		    fic_vecteur_eau=rep_swbd+'/'+racine_nom_eau+".gml"
+		    if racine_nom_eau in liste_tuiles_manquantes :
+			valeur=0
+		        # pour les tuiles manquantes à l'intérieur des terre, on fournit la valeur 0 (terre)
+
+		    creer_fichier_eau(fic_vecteur_eau,racine_nom_eau)
+
+                else:
+                    fic_vecteur_eau = shp[0]
+                    # in faut recuperer pour la couche le nom complet (y compris la lettre indiquant le continent)
+                    racine_nom_eau = os.path.basename(fic_vecteur_eau)[:-4]
+                commande="gdal_rasterize -burn %d -l %s %s %s"%(valeur,racine_nom_eau,fic_vecteur_eau,nom_raster_swbd)
+                print "#############Fichier eau :",fic_vecteur_eau
+                print commande
+                os.system(commande)
+
+	return nom_mnt_nodata0,nom_raster_swbd
+
+
+#calcul de pentes et aspect
+##########################
+def calcul_pente_aspect_mem(rac_mnt,dz_dc,dz_dl):
+    norme=np.sqrt((dz_dc)*(dz_dc)+(dz_dl)*(dz_dl))
+    slope =np.arctan(norme)
+    aspect=np.where(dz_dc>0,np.arccos(dz_dl/norme),2*np.pi-np.arccos(dz_dl/norme)) 
+    aspect=np.where(slope==0,0,aspect)
+    
+    (slope*100.) .astype('int16').tofile(rac_mnt+'.slope')
+    (aspect*100.).astype('int16').tofile(rac_mnt+'.aspect')
 
 ##############################################
 ##############################################	

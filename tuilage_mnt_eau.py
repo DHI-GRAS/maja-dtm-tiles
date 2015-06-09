@@ -6,7 +6,21 @@ Reprojette et decoupe un mnt SRTM sur les tuiles d'un site
 Les paramètres sont dans parametres.py, dont le nom du site qui sert à déterminer le fichier de paramètres du tuilage d'un site (ex pyrenees.py)
 
 """
+import optparse
 
+
+###########################################################################
+class OptionParser (optparse.OptionParser):
+ 
+    def check_required (self, opt):
+      option = self.get_option(opt)
+ 
+      # Assumes the option's 'default' is set to None!
+      if getattr(self.values, option.dest) is None:
+          self.error("%s option not supplied" % option)
+
+############################# Main
+	  
 import os.path
 import numpy as np
 from math import ceil,floor
@@ -17,123 +31,196 @@ import sys
 
 os.environ['LC_NUMERIC'] = 'C'
 
-# lecture du fichier de paramètres
-(rep_srtm, rep_mnt, rep_swbd, rep_eau)=lire_param_txt("parametres.txt")
+if len(sys.argv) == 1:
+	prog = os.path.basename(sys.argv[0])
+	print '      '+sys.argv[0]+' [options]'
+	print "     Aide : ", prog, " --help"
+	print "        ou : ", prog, " -h"
+	print "example : python %s -p parametres_po.txt -s ~/DONNEES/SPOT5TAKE5/prep_mnt/Algeria4.py -m PO -f 10 -c 100"%sys.argv[0]
 
-if len(sys.argv) != 4:
-	print sys.argv[0] + ' site pleine_resolution resolution_composite'
+	sys.exit(-1)
 else:
-    SITE = sys.argv[1]
-    FULL_RES = int(sys.argv[2])
-    COARSE_RES = int(sys.argv[3])
+	usage = "usage: %prog [options] "
+	parser = OptionParser(usage=usage)
+	parser.add_option("-p", "--parametre", dest="fic_param", action="store", type="string", \
+			help="fichier de parametre",default=None)
+        parser.add_option("-s", "--site", dest="fic_site", action="store", type="string", \
+			help="fichier de description du site", default=None)
+	parser.add_option("-m", "--mnt", dest="mnt", action="store", type="choice", \
+			help="SRTM ou PO (Planet Observer)", choices=['SRTM','PO'],default=None)
+	parser.add_option("-f", dest="FULL_RES", action="store", type="int",  \
+			help="Full resolution",default=False)
+	parser.add_option("-c", dest="COARSE_RES", action="store", type="int",  \
+			help="Coarse resolution",default=False)	
+	parser.add_option("-e", dest="eau_seulement", action="store_true",  \
+			help="Traitement des masques d'eau seulement",default=False)
+	parser.add_option("-n", dest="sans_numero", action="store_true",  \
+			help="Traitement sans numero de tuile",default=False)
 
-    # lecture du fichier site 
-    site=lire_fichier_site(SITE+".txt")
+	(options, args) = parser.parse_args()
+	parser.check_required("-p")
+	parser.check_required("-s")
+	parser.check_required("-m")
+	parser.check_required("-c")
+	parser.check_required("-f")
 
-    #definition des tuiles
 
-    #==========création de la liste SRTM
-    #conversion des coordonnées des coins en lat_lon
-    latlon = osr.SpatialReference()  
-    latlon.SetWellKnownGeogCS( "WGS84" )
-    proj_site=osr.SpatialReference()
-    proj_site.ImportFromEPSG(site.EPSG_out)
-    transform = osr.CoordinateTransformation(proj_site,latlon)
+# lecture du fichier de paramètres et du fichier site
+(rep_mnt_in, rep_mnt, rep_swbd, rep_eau)=lire_param_txt(options.fic_param)
+site=lire_fichier_site(options.fic_site)
+SRTM_RES = 90
 
-    #recherche des 4 coins du site
-    ulx_site = site.orig_x + site.tx_min * site.pas_x #upper left
-    uly_site = site.orig_y + site.ty_max * site.pas_y
-    lrx_site = site.orig_x + (site.tx_max + 1) * site.pas_x + site.marge  #lower left
-    lry_site = site.orig_y + (site.ty_min - 1) * site.pas_y - site.marge
 
-    ul_latlon = transform.TransformPoint(ulx_site, uly_site,0)
-    lr_latlon = transform.TransformPoint(lrx_site, lry_site,0)
+#==========création de la liste des fichiers planet_observer
+#conversion des coordonnées des coins en lat_lon
+latlon = osr.SpatialReference()  
+latlon.SetWellKnownGeogCS( "WGS84" )
+proj_site=osr.SpatialReference()
+proj_site.ImportFromEPSG(site.EPSG_out)
+transform = osr.CoordinateTransformation(proj_site,latlon)
 
+#recherche des 4 coins du site
+ulx_site = site.orig_x + site.tx_min * site.pas_x #upper left
+uly_site = site.orig_y + site.ty_max * site.pas_y
+lrx_site = site.orig_x + (site.tx_max + 1) * site.pas_x + site.marge  #lower left
+lry_site = site.orig_y + (site.ty_min - 1) * site.pas_y - site.marge
+
+ul_latlon = transform.TransformPoint(ulx_site, uly_site,0)
+lr_latlon = transform.TransformPoint(lrx_site, lry_site,0)
+
+
+liste_fic_mnt=[]
+
+############# MNT SRTM du CGIAR
+if options.mnt=="SRTM":
     # liste des fichiers SRTM nécessaires
+    if (ul_latlon[1]) >60 or (lr_latlon[1]>60) :
+	print "#################################################"
+	print "latitude supérieure à 60 degrés, pas de donnees SRTM"
+	print "#################################################"
+	sys.exit(-3)
+
     ul_latlon_srtm = [int(ul_latlon[0]+180)/5+1  ,int(60-ul_latlon[1])/5+1]
     lr_latlon_srtm = [int(lr_latlon[0]+180)/5+1  ,int(60-lr_latlon[1])/5+1]
-    liste_fic_srtm=[]
 
     for x in range(ul_latlon_srtm[0],lr_latlon_srtm[0]+1):
 	for y in range(ul_latlon_srtm[1],lr_latlon_srtm[1]+1):
-	    liste_fic_srtm.append("srtm_%02d_%02d.tif"%(x,y))
+	    liste_fic_mnt.append("srtm_%02d_%02d.tif"%(x,y))
 
     print ul_latlon,lr_latlon
     print ul_latlon_srtm,lr_latlon_srtm
-    print liste_fic_srtm
+    print liste_fic_mnt
 
-    # liste des fichiers SWBD nécessaires
-    ul_latlon_swbd = [int(floor(ul_latlon[0])) ,int(floor(ul_latlon[1]))]
-    lr_latlon_swbd = [int(floor(lr_latlon[0])) ,int(floor(lr_latlon[1]))]
-    print ul_latlon,lr_latlon
-    print ul_latlon_swbd,lr_latlon_swbd
-    liste_fic_eau=[]
-    for x in range(ul_latlon_swbd[0],lr_latlon_swbd[0]+1):
-	for y in range(lr_latlon_swbd[1],ul_latlon_swbd[1]+1):
+########## MNT Planet Observer
+elif options.mnt=="PO":    
+
+    ul_latlon_po = [int(floor(ul_latlon[0])) ,int(floor(ul_latlon[1]))]
+    lr_latlon_po = [int(floor(lr_latlon[0])) ,int(floor(lr_latlon[1]))]
+
+    for x in range(ul_latlon_po[0],lr_latlon_po[0]+1):
+	for y in range(lr_latlon_po[1],ul_latlon_po[1]+1):
 	    if x>=0:
 		ew="e"
 		num_x=x
 	    else:
 		ew="w"
 		num_x=-x
-	    if y>0:
+	    if y>=0:
 		ns="n"
 		num_y=y
 	    else:
 		ns="s"
 		num_y=-y
+	    liste_fic_mnt.append("%s%03d/%s%02d.dt1"%(ew,num_x,ns,num_y))
 
-	    liste_fic_eau.append("%s%03d%s%02d"%(ew,num_x,ns,num_y))
+    print ul_latlon,lr_latlon
+    print ul_latlon_po,lr_latlon_po
+    print liste_fic_mnt
+
+# liste des fichiers SWBD nécessaires
+ul_latlon_swbd = [int(floor(ul_latlon[0])) ,int(floor(ul_latlon[1]))]
+lr_latlon_swbd = [int(floor(lr_latlon[0])) ,int(floor(lr_latlon[1]))]
+print ul_latlon,lr_latlon
+print ul_latlon_swbd,lr_latlon_swbd
+liste_fic_eau=[]
+for x in range(ul_latlon_swbd[0],lr_latlon_swbd[0]+1):
+    for y in range(lr_latlon_swbd[1],ul_latlon_swbd[1]+1):
+	if x>=0:
+	    ew="e"
+	    num_x=x
+	else:
+	    ew="w"
+	    num_x=-x
+	if y>=0:
+	    ns="n"
+	    num_y=y
+	else:
+	    ns="s"
+	    num_y=-y
+
+	liste_fic_eau.append("%s%03d%s%02d"%(ew,num_x,ns,num_y))
 
 
-    print liste_fic_eau
+print liste_fic_eau
 
-    # Fusion des mnt_srtm en un seul
-    (fic_mnt_in,fic_eau_in) = fusion_srtm(liste_fic_srtm, liste_fic_eau, rep_srtm, rep_swbd,SITE)
+# Fusion des mnt_srtm en un seul
+(fic_mnt_in,fic_eau_in) = fusion_mnt(liste_fic_mnt, liste_fic_eau, rep_mnt_in, rep_swbd,site.nom)
+print "############",fic_mnt_in
 
+####################Boucle de création des fichiers MNT et eau pour chaque tuile
 
-
-
-    ####################Boucle de création des fichiers MNT et eau pour chaque tuile
-
-    for tx in range(site.tx_min, site.tx_max + 1):
+for tx in range(site.tx_min, site.tx_max + 1):
 	for ty in range(site.ty_min, site.ty_max + 1):
-
 	    ulx = site.orig_x + tx * site.pas_x #upper left
 	    uly = site.orig_y + ty * site.pas_y
 	    lrx = site.orig_x + (tx + 1) * site.pas_x + site.marge  #lower left
 	    lry = site.orig_y + (ty - 1) * site.pas_y - site.marge
 
+	    lrx_90m = int(ceil((lrx - ulx) / float(SRTM_RES))) * SRTM_RES + ulx
+	    lry_90m = uly - int(ceil((uly - lry) / float(SRTM_RES))) * SRTM_RES
 
-	    if  site.tx_max==0 & site.ty_max==0:
-		nom_tuile=SITE
+	    lrx_coarse = int(ceil((lrx - ulx) / float(options.COARSE_RES))) * options.COARSE_RES + ulx
+	    lry_coarse = uly - int(ceil((uly - lry) / float(options.COARSE_RES))) * options.COARSE_RES
+
+	    if  options.sans_numero==True & site.tx_max==0 & site.ty_max==0:
+	         nom_tuile=site.nom
 	    else:
-		nom_tuile =calcule_nom_tuile(tx,ty,site,SITE)
+		 nom_tuile =calcule_nom_tuile(tx,ty,site,site.nom)
 
 	    ###pour le MNT
-	    rep_mnt_out = rep_mnt + nom_tuile + '/'
-	    if not(os.path.exists(rep_mnt_out)) :
-		    os.mkdir(rep_mnt_out)
 
-	    #Haute résolution
-	    mnt = classe_mnt(rep_mnt_out, nom_tuile, ulx, uly, lrx, lry, FULL_RES, site.chaine_proj)
-	    mnt.decoupe(fic_mnt_in)
+	    if options.eau_seulement==False:
+		rep_mnt_out = rep_mnt + nom_tuile + '/'
+		if not(os.path.exists(rep_mnt_out)) :
+			os.mkdir(rep_mnt_out)
 
-	    lrx_coarse = int(ceil((lrx - ulx) / float(COARSE_RES))) * COARSE_RES + ulx
-	    lry_coarse = uly - int(ceil((uly - lry) / float(COARSE_RES))) * COARSE_RES
+		#Resolution SRTM_RES
+		print "############### c'est parti"
+		mnt_90m = classe_mnt(rep_mnt_out, nom_tuile, ulx, uly, lrx_90m, lry_90m, SRTM_RES, site.chaine_proj)
+		mnt_90m.decoupe(fic_mnt_in)
 
-	    #print ulx, lrx, lrx_coarse
-	    #print uly, lry, lry_coarse
-	    #Basse résolution
-	    mnt = classe_mnt(rep_mnt_out, nom_tuile, ulx, uly, lrx_coarse, lry_coarse, COARSE_RES, site.chaine_proj)
-	    mnt.decoupe(fic_mnt_in)
+		#calcul du gradient à 90m
+		(fic_dz_dl_srtm,fic_dz_dc_srtm)=mnt_90m.calcul_gradient()
 
+		#Basse résolution
+
+		mnt_coarse = classe_mnt(rep_mnt_out, nom_tuile, ulx, uly, lrx_coarse, lry_coarse, options.COARSE_RES, site.chaine_proj)
+		mnt_coarse.decoupe(fic_mnt_in)
+		mnt_coarse.reech_gradient(fic_dz_dl_srtm,fic_dz_dc_srtm)
+		mnt_coarse.calcul_pente_aspect_fic()
+
+
+
+		#Haute résolution
+		mnt_full = classe_mnt(rep_mnt_out, nom_tuile, ulx, uly, lrx, lry, options.FULL_RES, site.chaine_proj)
+		mnt_full.decoupe(fic_mnt_in)
+		mnt_full.reech_gradient(fic_dz_dl_srtm,fic_dz_dc_srtm)
+		mnt_full.calcul_pente_aspect_fic()
 
 	    ### Pour l'eau
 	    rep_eau_out = rep_eau + nom_tuile + '/'
 	    if not(os.path.exists(rep_eau_out)) :
-		    os.mkdir(rep_eau_out)
+		os.mkdir(rep_eau_out)
 
-	    eau = classe_mnt(rep_eau_out, nom_tuile, ulx, uly, lrx_coarse, lry_coarse, COARSE_RES, site.chaine_proj)
+	    eau = classe_mnt(rep_eau_out, nom_tuile, ulx, uly, lrx_coarse, lry_coarse, options.COARSE_RES, site.chaine_proj)
 	    eau.decoupe_eau(fic_eau_in)
-
