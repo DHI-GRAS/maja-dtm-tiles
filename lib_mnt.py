@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os, os.path
+import os, os.path, shutil
 import numpy as np
 import scipy.ndimage as nd
 from osgeo import gdal
@@ -295,21 +295,44 @@ class classe_mnt :
 
 
         #############################################################
+	########################Calcul_eau_mnt#######################
+	#############################################################
+
+	def calcul_masque_mnt(self,rep,rac):
+	    rac_eau= self.racine+'_'+str(self.res) +'m'
+	    fic_hdr_eau = rac_eau +'.hdr'
+	    fic_eau    =rac_eau +'.eau'
+	    
+	    rac_mnt= rep+rac+'_'+str(self.res) +'m'
+	    fic_hdr_mnt = rac_mnt +'.hdr'
+    	    fic_hdr_mnt_float = rac_mnt +'float.hdr'
+	    fic_mnt=rac_mnt +'float.mnt'
+	    fic_dz_dl = rac_mnt +'float.dz_dl'
+	    fic_dz_dc = rac_mnt +'float.dz_dc'
+	    
+	    (nblig,nbcol,type_donnee,endian)=lire_entete_mnt(fic_hdr_mnt_float)
+	    mnt=(np.fromfile(fic_mnt,type_donnee)).reshape(nblig,nbcol)
+	    dz_dl=(np.fromfile(fic_dz_dl,type_donnee)).reshape(nblig,nbcol)
+	    dz_dc=(np.fromfile(fic_dz_dc,type_donnee)).reshape(nblig,nbcol)
+
+	    eau=np.where((mnt<0) & (np.abs(dz_dl)<=1e5) & (np.abs(dz_dc)<=1e5),1,0)
+
+	    eau.astype('int16').tofile(fic_eau)
+	    print fic_eau
+	    shutil.copy(fic_hdr_mnt,fic_hdr_eau)
+
+
+        #############################################################
 	########################Decoupage EAU########################
 	#############################################################
 
-	def decoupe_eau(self,eau_in):
-		rac_eau= self.racine+'_'+str(self.res) +'m'
-		fic_hdr_eau=rac_eau +'.hdr'
-		fic_eau    =rac_eau +'.eau'
-
-		#calcul du mnt int
-		chaine_etendue 	= str(self.ulx)+' '+str(self.lry)+' '+str(self.lrx)+' '+str(self.uly)
-		commande='gdalwarp -overwrite  -r near -of ENVI -tr %d %d -te %s -t_srs %s %s %s\n'% (self.res,self.res,chaine_etendue,self.chaine_proj,eau_in,fic_eau)
-		print commande
-		os.system(commande)
-
-
+	def decoupe_eau(self):
+	    rac_eau= self.racine+'_'+str(self.res) +'m'
+	    #calcul du mnt int
+	    chaine_etendue 	= str(self.ulx)+' '+str(self.lry)+' '+str(self.lrx)+' '+str(self.uly)
+	    commande='gdalwarp -overwrite  -r near -of ENVI -tr %d %d -te %s -t_srs %s %s %s\n'% (self.res,self.res,chaine_etendue,self.chaine_proj,eau_in,fic_eau)
+	    print commande
+	    os.system(commande)
 
  
 ########################################################################
@@ -389,7 +412,7 @@ def fusion_srtm(liste_fic_srtm,liste_fic_eau,rep_srtm,rep_swbd,nom_site) :
 #################################################################################
 ###########################Fusion des Mnt Planet Observer########################
 ##########################################################################
-def fusion_mnt(liste_fic_mnt,liste_fic_eau,rep_mnt,rep_swbd,nom_site) :
+def fusion_mnt(liste_fic_mnt,liste_fic_eau,rep_mnt,rep_swbd,nom_site,calcul_eau_mnt) :
         print liste_fic_mnt
         for fic in liste_fic_mnt:
 	    print rep_mnt+'/'+fic
@@ -419,46 +442,49 @@ def fusion_mnt(liste_fic_mnt,liste_fic_eau,rep_mnt,rep_swbd,nom_site) :
 	print commande
 	os.system(commande)
 
-        # Création d'un fichier vide (valeurs à 0) avec la même emprise que le mnt fusionnné
-        ####################################################################################
-        nom_raster_swbd=rep_swbd+'/'+os.path.basename(nom_mnt).split('.tif')[0]+"_tmp.tif"
-        if os.path.exists(nom_raster_swbd):
-            os.remove(nom_raster_swbd)   
-        ds=gdal.Open(nom_mnt)
-        driver = gdal.GetDriverByName('GTiff')
-        ds_out = driver.CreateCopy(nom_raster_swbd, ds, 0 )
-        inband  = ds.GetRasterBand(1)
-        outband = ds_out.GetRasterBand(1)
-        for i in range(inband.YSize - 1, -1, -1):
-           scanline = inband.ReadAsArray(0, i, inband.XSize, 1, inband.XSize, 1)
-           scanline = scanline*0
-           outband.WriteArray(scanline, 0, i)
-        ds_out=None
-        
-        #remplissage de ce fichier avec les fichiers SWBD
-	liste_tuiles_manquantes=["e017n03","e006n30","e006n29","e005n30","e005n29","e015n00","e015s24","e022n28","e023n28","w074n01","e034n02","e035n02"]
-        for racine_nom_eau in liste_fic_eau:
-                print racine_nom_eau
-                shp = glob.glob(rep_swbd+'/'+racine_nom_eau+"*.shp")
-		valeur=1
-                if len(shp) == 0:
-                    print 'pas de fichier eau : ', racine_nom_eau
-		    fic_vecteur_eau=rep_swbd+'/'+racine_nom_eau+".gml"
-		    if racine_nom_eau in liste_tuiles_manquantes :
-			valeur=0
-		        # pour les tuiles manquantes à l'intérieur des terre, on fournit la valeur 0 (terre)
+	if calcul_eau_mnt==0 : # si on est en deça de 60°N
+	    
+	    # Création d'un fichier vide (valeurs à 0) avec la même emprise que le mnt fusionnné
+	    ####################################################################################
+	    nom_raster_swbd=rep_swbd+'/'+os.path.basename(nom_mnt).split('.tif')[0]+"_tmp.tif"
+	    if os.path.exists(nom_raster_swbd):
+		os.remove(nom_raster_swbd)   
+	    ds=gdal.Open(nom_mnt)
+	    driver = gdal.GetDriverByName('GTiff')
+	    ds_out = driver.CreateCopy(nom_raster_swbd, ds, 0 )
+	    inband  = ds.GetRasterBand(1)
+	    outband = ds_out.GetRasterBand(1)
+	    for i in range(inband.YSize - 1, -1, -1):
+	       scanline = inband.ReadAsArray(0, i, inband.XSize, 1, inband.XSize, 1)
+	       scanline = scanline*0
+	       outband.WriteArray(scanline, 0, i)
+	    ds_out=None
 
-		    creer_fichier_eau(fic_vecteur_eau,racine_nom_eau)
+	    #remplissage de ce fichier avec les fichiers SWBD
+	    liste_tuiles_manquantes=["e017n03","e006n30","e006n29","e005n30","e005n29","e015n00","e015s24","e022n28","e023n28","w074n01","e034n02","e035n02"]
+	    for racine_nom_eau in liste_fic_eau:
+		    print racine_nom_eau
+		    shp = glob.glob(rep_swbd+'/'+racine_nom_eau+"*.shp")
+		    valeur=1
+		    if len(shp) == 0:
+			print 'pas de fichier eau : ', racine_nom_eau
+			fic_vecteur_eau=rep_swbd+'/'+racine_nom_eau+".gml"
+			if racine_nom_eau in liste_tuiles_manquantes :
+			    valeur=0
+			    # pour les tuiles manquantes à l'intérieur des terre, on fournit la valeur 0 (terre)
 
-                else:
-                    fic_vecteur_eau = shp[0]
-                    # in faut recuperer pour la couche le nom complet (y compris la lettre indiquant le continent)
-                    racine_nom_eau = os.path.basename(fic_vecteur_eau)[:-4]
-                commande="gdal_rasterize -burn %d -l %s %s %s"%(valeur,racine_nom_eau,fic_vecteur_eau,nom_raster_swbd)
-                print "#############Fichier eau :",fic_vecteur_eau
-                print commande
-                os.system(commande)
+			creer_fichier_eau(fic_vecteur_eau,racine_nom_eau)
 
+		    else:
+			fic_vecteur_eau = shp[0]
+			# in faut recuperer pour la couche le nom complet (y compris la lettre indiquant le continent)
+			racine_nom_eau = os.path.basename(fic_vecteur_eau)[:-4]
+		    commande="gdal_rasterize -burn %d -l %s %s %s"%(valeur,racine_nom_eau,fic_vecteur_eau,nom_raster_swbd)
+		    print "#############Fichier eau :",fic_vecteur_eau
+		    print commande
+		    os.system(commande)
+	else :
+	    nom_raster_swbd=""
 	return nom_mnt_nodata0,nom_raster_swbd
 
 

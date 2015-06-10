@@ -42,6 +42,9 @@ if len(sys.argv) == 1:
 else:
 	usage = "usage: %prog [options] "
 	parser = OptionParser(usage=usage)
+	parser.set_defaults(eau_seulement=False)
+	parser.set_defaults(sans_numero=False)
+	
 	parser.add_option("-p", "--parametre", dest="fic_param", action="store", type="string", \
 			help="fichier de parametre",default=None)
         parser.add_option("-s", "--site", dest="fic_site", action="store", type="string", \
@@ -49,13 +52,13 @@ else:
 	parser.add_option("-m", "--mnt", dest="mnt", action="store", type="choice", \
 			help="SRTM ou PO (Planet Observer)", choices=['SRTM','PO'],default=None)
 	parser.add_option("-f", dest="FULL_RES", action="store", type="int",  \
-			help="Full resolution",default=False)
+			help="Full resolution", default=None)
 	parser.add_option("-c", dest="COARSE_RES", action="store", type="int",  \
-			help="Coarse resolution",default=False)	
+			help="Coarse resolution", default=None)	
 	parser.add_option("-e", dest="eau_seulement", action="store_true",  \
-			help="Traitement des masques d'eau seulement",default=False)
+			help="Traitement des masques d'eau seulement")
 	parser.add_option("-n", dest="sans_numero", action="store_true",  \
-			help="Traitement sans numero de tuile",default=False)
+			help="Traitement sans numero de tuile")
 
 	(options, args) = parser.parse_args()
 	parser.check_required("-p")
@@ -142,6 +145,15 @@ ul_latlon_swbd = [int(floor(ul_latlon[0])) ,int(floor(ul_latlon[1]))]
 lr_latlon_swbd = [int(floor(lr_latlon[0])) ,int(floor(lr_latlon[1]))]
 print ul_latlon,lr_latlon
 print ul_latlon_swbd,lr_latlon_swbd
+
+calcul_masque_eau_mnt=0
+if (ul_latlon[1]) >60 or (lr_latlon[1]>60) :
+	print "#################################################"
+	print "latitude supérieure à 60 degrés, pas de donnees SRTM"
+	print "le masque d'eau est généré à partir du MNT"
+	print "#################################################"
+	calcul_masque_eau_mnt=1
+
 liste_fic_eau=[]
 for x in range(ul_latlon_swbd[0],lr_latlon_swbd[0]+1):
     for y in range(lr_latlon_swbd[1],ul_latlon_swbd[1]+1):
@@ -158,13 +170,13 @@ for x in range(ul_latlon_swbd[0],lr_latlon_swbd[0]+1):
 	    ns="s"
 	    num_y=-y
 
-	liste_fic_eau.append("%s%03d%s%02d"%(ew,num_x,ns,num_y))
+	    liste_fic_eau.append("%s%03d%s%02d"%(ew,num_x,ns,num_y))
 
 
 print liste_fic_eau
 
 # Fusion des mnt_srtm en un seul
-(fic_mnt_in,fic_eau_in) = fusion_mnt(liste_fic_mnt, liste_fic_eau, rep_mnt_in, rep_swbd,site.nom)
+(fic_mnt_in,fic_eau_in) = fusion_mnt(liste_fic_mnt, liste_fic_eau, rep_mnt_in, rep_swbd,site.nom,calcul_masque_eau_mnt)
 print "############",fic_mnt_in
 
 ####################Boucle de création des fichiers MNT et eau pour chaque tuile
@@ -182,15 +194,15 @@ for tx in range(site.tx_min, site.tx_max + 1):
 	    lrx_coarse = int(ceil((lrx - ulx) / float(options.COARSE_RES))) * options.COARSE_RES + ulx
 	    lry_coarse = uly - int(ceil((uly - lry) / float(options.COARSE_RES))) * options.COARSE_RES
 
-	    if  options.sans_numero==True & site.tx_max==0 & site.ty_max==0:
+	    if  options.sans_numero & (site.tx_max==0) & (site.ty_max==0):
 	         nom_tuile=site.nom
 	    else:
 		 nom_tuile =calcule_nom_tuile(tx,ty,site,site.nom)
 
 	    ###pour le MNT
+	    rep_mnt_out = rep_mnt + nom_tuile + '/'
 
 	    if options.eau_seulement==False:
-		rep_mnt_out = rep_mnt + nom_tuile + '/'
 		if not(os.path.exists(rep_mnt_out)) :
 			os.mkdir(rep_mnt_out)
 
@@ -223,4 +235,8 @@ for tx in range(site.tx_min, site.tx_max + 1):
 		os.mkdir(rep_eau_out)
 
 	    eau = classe_mnt(rep_eau_out, nom_tuile, ulx, uly, lrx_coarse, lry_coarse, options.COARSE_RES, site.chaine_proj)
-	    eau.decoupe_eau(fic_eau_in)
+    	    if calcul_masque_eau_mnt==0 :
+		eau.decoupe_eau(fic_eau_in)
+	    else:
+		eau.calcul_masque_mnt(rep_mnt_out, nom_tuile)
+		
