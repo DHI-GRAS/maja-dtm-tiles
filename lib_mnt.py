@@ -219,9 +219,9 @@ class classe_mnt :
 
 		self.ecrit_hd(nblig ,nbcol)
 		self.ecrit_hd_babel(nblig ,nbcol)
-		
-		cmd = 'ln -s ' + fic_mnt+" " + rac_mnt + '.c1'
-		os.system(cmd)
+
+		shutil.copy(fic_mnt,rac_mnt + '.c1')
+
 
 	#############################################################
 	########################Reech gradient########################
@@ -326,8 +326,11 @@ class classe_mnt :
 	########################Decoupage EAU########################
 	#############################################################
 
-	def decoupe_eau(self):
+	def decoupe_eau(self,eau_in):
 	    rac_eau= self.racine+'_'+str(self.res) +'m'
+	    fic_hdr_eau=rac_eau +'.hdr'
+	    fic_eau    =rac_eau +'.eau'
+	    
 	    #calcul du mnt int
 	    chaine_etendue 	= str(self.ulx)+' '+str(self.lry)+' '+str(self.lrx)+' '+str(self.uly)
 	    commande='gdalwarp -overwrite  -r near -of ENVI -tr %d %d -te %s -t_srs %s %s %s\n'% (self.res,self.res,chaine_etendue,self.chaine_proj,eau_in,fic_eau)
