@@ -31,7 +31,7 @@ class classe_site :
 	self.tx_min=tx_min
 	self.tx_max=tx_max
 	self.ty_min=ty_min
-	self.ty_max=tx_max
+	self.ty_max=ty_max
 	self.pas_x=pas_x
 	self.pas_y=pas_y
 	self.marge=marge

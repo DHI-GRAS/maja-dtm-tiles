@@ -36,8 +36,8 @@ if len(sys.argv) == 1:
 	print '      '+sys.argv[0]+' [options]'
 	print "     Aide : ", prog, " --help"
 	print "        ou : ", prog, " -h"
-	print "example : python %s -p parametres_po.txt -s ~/DONNEES/SPOT5TAKE5/prep_mnt/Algeria4.py -m PO -f 10 -c 100"%sys.argv[0]
-
+	print "example1 : python %s -p parametres_po.txt -s ~/DONNEES/SPOT5TAKE5/prep_mnt/Algeria4.py -m PO -f 10 -c 100"%sys.argv[0]
+	print "example2 : python tuilage_mnt_eau.py -p parametres_srtm.txt -s CVersailles.txt -m SRTM -f 20 -c 200"%sys.argv[0]
 	sys.exit(-1)
 else:
 	usage = "usage: %prog [options] "
@@ -198,7 +198,7 @@ for tx in range(site.tx_min, site.tx_max + 1):
 	         nom_tuile=site.nom
 	    else:
 		 nom_tuile =calcule_nom_tuile(tx,ty,site,site.nom)
-
+	    print "nom de la tuile",nom_tuile,tx,ty
 	    ###pour le MNT
 	    rep_mnt_out = rep_mnt + nom_tuile + '/'
 
