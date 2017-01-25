@@ -33,21 +33,8 @@ OUTDIR_EAU =/mnt/data/mnt/
 MNT means DTM and EAU means water
 
 
-It also needs a file site. An example is provided : CVersailles.txt, which was used for SPOT4 (Take5)
-'''
-proj=UTM32N
-EPSG_out=32632
-chaine_proj=EPSG:32632
-tx_min=0
-ty_min=0
-tx_max=0
-ty_max=0
-pas_x=109800
-pas_y=109800
-orig_x=499980
-orig_y=4000020
-marge=0
-'''
+It also needs a file site. An example is provided : CVersailles.txt, which was used for SPOT4 (Take5), and 32SNE.txt, for Sentinel-2 tile 32SNE
+
 
 - proj is the projection name, 
 - EPSG_OUT, is the EPSG code of the projection, 
@@ -65,9 +52,10 @@ marge=0
   	For Sentinel-2, the margin is 9980 m
 
  
-To generate the necessary files for one Sentinel-2 tile, two command lines muust be used.
+To generate the necessary files for one Sentinel-2 tile, two command lines must be used, one for resolution 10m, the other for resolution 20m
 '''
 python tuilage_mnt_eau.py -p parametres.txt -s 32SNE.txt -m SRTM -f 20 -c 240
+
 python tuilage_mnt_eau.py -p parametres.txt -s 32SNE.txt -m SRTM -f 10 -c 240
 '''
 
