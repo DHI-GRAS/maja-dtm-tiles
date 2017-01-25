@@ -47,7 +47,6 @@ pas_y=109800
 orig_x=499980
 orig_y=4000020
 marge=0
-
 '''
 
 - proj is the projection name, 
