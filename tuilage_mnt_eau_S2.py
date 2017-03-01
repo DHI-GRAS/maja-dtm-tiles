@@ -51,8 +51,6 @@ else:
 			help="fichier de description du site", default=None)
 	parser.add_option("-m", "--mnt", dest="mnt", action="store", type="choice", \
 			help="SRTM ou PO (Planet Observer)", choices=['SRTM','PO'],default=None)
-	parser.add_option("-f", dest="FULL_RES", action="store", type="int",  \
-			help="Full resolution", default=None)
 	parser.add_option("-c", dest="COARSE_RES", action="store", type="int",  \
 			help="Coarse resolution", default=None)	
 	parser.add_option("-e", dest="eau_seulement", action="store_true",  \
@@ -65,7 +63,6 @@ else:
 	parser.check_required("-s")
 	parser.check_required("-m")
 	parser.check_required("-c")
-	parser.check_required("-f")
 
 
 # lecture du fichier de paramètres et du fichier site
@@ -223,11 +220,14 @@ for tx in range(site.tx_min, site.tx_max + 1):
 
 
 
-		#Haute résolution
-		mnt_full = classe_mnt(rep_mnt_out, nom_tuile, ulx, uly, lrx, lry, options.FULL_RES, site.chaine_proj)
-		mnt_full.decoupe(fic_mnt_in)
-		mnt_full.reech_gradient(fic_dz_dl_srtm,fic_dz_dc_srtm)
-		mnt_full.calcul_pente_aspect_fic()
+		#Haute résolution 10 et 20m
+                for full_res in [10,20]:
+                    mnt_full = classe_mnt(rep_mnt_out, nom_tuile, ulx, uly, lrx, lry, full_res , site.chaine_proj)
+                    mnt_full.decoupe(fic_mnt_in)
+                    mnt_full.reech_gradient(fic_dz_dl_srtm,fic_dz_dc_srtm)
+                    mnt_full.calcul_pente_aspect_fic()
+
+  
 
 	    ### Pour l'eau
 	    rep_eau_out = rep_eau + nom_tuile + '/'
