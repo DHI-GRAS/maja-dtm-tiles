@@ -36,7 +36,7 @@
       <DEM_Information>
         <Cartographic>
           <Coordinate_Reference_System>
-            <Code>epsg</Code>
+            <Code>EPSG:epsg</Code>
             <Short_Description>proj</Short_Description>
           </Coordinate_Reference_System>
           <Upper_Left_Corner>
