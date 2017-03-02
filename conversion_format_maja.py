@@ -79,6 +79,11 @@ def writeHDR(hdr_out,tuile,proj,ulx,uly,resx,resy,nbCol,nbLig,moyenne,ecart) :
 
 ########## Main
 
+if len(sys.argv)!=3 :
+    print "Usage   : python %s tile input_directory"%sys.argv[0]
+    print "Example : python %s 32SNE mnt/32SNE"%sys.argv[0]
+    sys.exit(-1)
+    
 #inputs :
 tuile=sys.argv[1]
 rep_mnt_in=sys.argv[2]
