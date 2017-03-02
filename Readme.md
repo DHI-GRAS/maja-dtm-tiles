@@ -57,7 +57,7 @@ It also needs a file site. An example is provided : CVersailles.txt, which was u
 
 A dedicated tool has been written for Sentinel-2 :
 
-' python tuilage_mnt_eau_S2.py -p parameters.txt -s 32SNE.txt -m SRTM -c 240 '
+``` python tuilage_mnt_eau_S2.py -p parameters.txt -s 32SNE.txt -m SRTM -c 240 ```
 
 `-c` is the coarse resolution
 
@@ -67,7 +67,7 @@ This tool generates data with the format needed for the prototype version of MAC
 
 A converter is available to obtain the data format to use as input of MAJA (operational version)
 
-' python conversion_format_maja.py 32SNE mnt/32SNE '
+``` python conversion_format_maja.py 32SNE mnt/32SNE ```
 
 
 
