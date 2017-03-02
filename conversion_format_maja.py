@@ -44,7 +44,7 @@ def writeHDR(hdr_out,tuile,proj,ulx,uly,resx,resy,nbCol,nbLig,moyenne,ecart) :
         epsg="327%d02"%epsg_num
     print epsg
 
-    proj="WGS 84 / UTM Zone %s"%epsg_asc
+    proj="WGS 84 / UTM zone %s"%epsg_asc
 
     print proj,epsg
     
@@ -53,54 +53,110 @@ def writeHDR(hdr_out,tuile,proj,ulx,uly,resx,resy,nbCol,nbLig,moyenne,ecart) :
             lignes=fin.readlines()
             for lig in lignes:
                 if lig.find("tuile")>0:
-                     lig=lig.replace("tuile",tuile)
+                     lig=lig.replace("tuile","T"+tuile)
                 elif lig.find("epsg")>0:
                      lig=lig.replace("epsg",epsg)
                 elif lig.find("proj")>0:
                      lig=lig.replace("proj",proj)
                 elif lig.find("ulx")>0:
-                     lig=lig.replace("ulx",str(ulx))
+                     lig=lig.replace("ulx",str(int(ulx)))
                 elif lig.find("uly")>0:
-                     lig=lig.replace("uly",str(uly))
+                     lig=lig.replace("uly",str(int(uly)))
                 elif lig.find("resx")>0:
-                     lig=lig.replace("resx",str(resx))                 
+                     lig=lig.replace("resx",str(int(resx)))                 
                 elif lig.find("resy")>0:
-                     lig=lig.replace("resy",str(resy))  
+                     lig=lig.replace("resy",str(int(resy)))  
                 elif lig.find("nbLig")>0:
                      lig=lig.replace("nbLig",str(nbLig))  
                 elif lig.find("nbCol")>0:
                     lig=lig.replace("nbCol",str(nbCol))
                 elif lig.find("meanAlt")>0:
                      lig=lig.replace("meanAlt",str(moyenne))
-                elif lig.find("nbCol")>0:
+                elif lig.find("stdAlt")>0:
                      lig=lig.replace("stdAlt",str(ecart))
                 fout.write(lig)
                 
 
-os.environ['LC_NUMERIC'] = 'C'
+########## Main
 
-
+#inputs :
 tuile=sys.argv[1]
 rep_mnt_in=sys.argv[2]
 fic_mnt_in=glob.glob(rep_mnt_in+'/'+'*_10m.mnt')[0]
 
+# creation of output directory
 rep_mnt_out="S2__TEST_AUX_REFDE2_T%s_0001"%tuile
-os.mkdir(rep_mnt_out)
+if not os.path.exists(rep_mnt_out):
+    os.mkdir(rep_mnt_out)
+    
 hdr_out=rep_mnt_out+"/"+rep_mnt_out+".HDR"
 dbl_dir_out=rep_mnt_out+"/"+rep_mnt_out+".DBL.DIR"
-os.mkdir(dbl_dir_out)
+
+if not os.path.exists(dbl_dir_out):
+    os.mkdir(dbl_dir_out)
 
 
-
+# read the parameters of the tile dimension, projection and extent
 (proj,ulx,uly,resx,resy,nbCol,nbLig,moyenne,ecart)=gdalinfo(fic_mnt_in)
 
+# write the HDR file
 writeHDR(hdr_out,tuile,proj,ulx,uly,resx,resy,nbCol,nbLig,moyenne,ecart)
 
-print proj
-print ulx,uly
-print resx,resy
 
-print nbCol,nbLig
-print moyenne,ecart
+
+# now prepare binary file
+resolutions=[10,20,240]
+
+
+# Altitude 10m, 20m, 240m
+suff_proto="mnt"
+suff_MAJA=["ALT_R1", "ALT_R2", "ALC"]
+base_in=fic_mnt_in
+rac_out=dbl_dir_out+'/'+rep_mnt_out
+for i,res in enumerate(resolutions):
+    nom_in=base_in.replace("_10m.mnt","_%sm.%s"%(res,suff_proto))
+    nom_out=rac_out+"_%s.TIF"%suff_MAJA[i]                           
+    commande="gdal_translate -of GTIFF %s %s"%(nom_in,nom_out)
+    print commande
+    os.system(commande)
+                           
+
+# Slope 10m, 20m, 240m SLP_R1, SLP_R2, SLC
+suff_proto="slope"
+suff_MAJA=["SLP_R1", "SLP_R2", "SLC"]
+base_in=fic_mnt_in
+rac_out=dbl_dir_out+'/'+rep_mnt_out
+for i,res in enumerate(resolutions):
+    nom_in=base_in.replace("_10m.mnt","_%sm.%s"%(res,suff_proto))
+    nom_out=rac_out+"_%s.TIF"%suff_MAJA[i]                           
+    commande="gdal_translate -of GTIFF %s %s"%(nom_in,nom_out)
+    print commande
+    os.system(commande)
+
+
+# Aspect 10m, 20m ASP_R1, ASP_R2, ASC
+suff_proto="aspect"
+suff_MAJA=["ASP_R1", "ASP_R2", "ASC"]
+base_in=fic_mnt_in
+rac_out=dbl_dir_out+'/'+rep_mnt_out
+for i,res in enumerate(resolutions):
+    nom_in=base_in.replace("_10m.mnt","_%sm.%s"%(res,suff_proto))
+    nom_out=rac_out+"_%s.TIF"%suff_MAJA[i]                           
+    commande="gdal_translate -of GTIFF %s %s"%(nom_in,nom_out)
+    print commande
+    os.system(commande)
+
+# Water Mask
+suff_proto="eau"
+suff_MAJA="MSK"
+base_in=fic_mnt_in
+rac_out=dbl_dir_out+'/'+rep_mnt_out
+res=240
+nom_in=base_in.replace("_10m.mnt","_%sm.%s"%(res,suff_proto))
+nom_out=rac_out+"_%s.TIF"%suff_MAJA                           
+commande="gdal_translate -of GTIFF  %s %s"%(nom_in,nom_out)
+print commande
+os.system(commande)
+
 
 
