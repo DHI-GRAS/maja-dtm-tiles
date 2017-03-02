@@ -191,10 +191,8 @@ for tx in range(site.tx_min, site.tx_max + 1):
 	    lrx_coarse = int(ceil((lrx - ulx) / float(options.COARSE_RES))) * options.COARSE_RES + ulx
 	    lry_coarse = uly - int(ceil((uly - lry) / float(options.COARSE_RES))) * options.COARSE_RES
 
-	    if  options.sans_numero & (site.tx_max==0) & (site.ty_max==0):
-	         nom_tuile=site.nom
-	    else:
-		 nom_tuile =calcule_nom_tuile(tx,ty,site,site.nom)
+            nom_tuile=site.nom
+
 	    print "nom de la tuile",nom_tuile,tx,ty
 	    ###pour le MNT
 	    rep_mnt_out = rep_mnt + nom_tuile + '/'
