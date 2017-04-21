@@ -166,7 +166,7 @@ for x in range(ul_latlon_swbd[0],lr_latlon_swbd[0]+1):
 	    ns="s"
 	    num_y=-y
 
-	    liste_fic_eau.append("%s%03d%s%02d"%(ew,num_x,ns,num_y))
+        liste_fic_eau.append("%s%03d%s%02d"%(ew,num_x,ns,num_y))
 
 
 print liste_fic_eau
