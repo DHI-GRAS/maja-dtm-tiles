@@ -1,4 +1,4 @@
-INDIR_MNT =/mnt/data/DONNEES_AUX/SRTM/
-OUTDIR_MNT=/mnt/data/home/hagolleo/PROG/PREPARE_MNT/mnt/
-INDIR_EAU=/mnt/data/DONNEES_AUX/masque_eau/
-OUTDIR_EAU =/mnt/data/home/hagolleo/PROG/PREPARE_MNT/mnt/
+INDIR_MNT =/mnt/data/DONNEES_AUX/SRTM
+OUTDIR_MNT=/mnt/data/home/hagolleo/PROG/PREPARE_MNT/mnt
+INDIR_EAU=/mnt/data/DONNEES_AUX/masque_eau
+OUTDIR_EAU =/mnt/data/home/hagolleo/PROG/PREPARE_MNT/mnt
