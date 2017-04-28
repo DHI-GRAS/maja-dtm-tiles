@@ -1,6 +1,7 @@
 # DTM and water mask tool as input for MUSCATE
 
-This tool uses SRTM files from CGIAR-JRC processing, to provide the DTM used as input to MACCS/MAJA prototype, which includes also slope and aspect, at full and coarse resolution. In the case of Sentinel-2? it should be run twice, to account for the fact that we process data at 10m resolution and 20m resolution.  It also uses SRTM water bodies files to produce the water masks used within MACCS. 
+This tool uses SRTM files from CGIAR-JRC processing, to provide the DTM used as input to MACCS/MAJA prototype, which includes also slope and aspect, 
+at full and coarse resolution. It also uses SRTM water bodies files to produce the water masks used within MACCS. 
 A special version for MAJA is described at the end of the Readme file, together with a conversion tool to obtain the input format needed for *MAJA operational version*
 
 
