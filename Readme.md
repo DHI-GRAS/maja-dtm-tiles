@@ -24,12 +24,12 @@ In "data sets", select
 The tool requires a recent version of gdal (Minimum 1.11)
 
 
-The parameter file is as follows :
+The parameter file, on my computer, is as follows :
 ```
-INDIR_MNT =/mnt/data/DONNEES_AUX/SRTM/
-OUTDIR_MNT=/mnt/data/mnt/
-INDIR_EAU=/mnt/data/DONNEES_AUX/masque_eau/
-OUTDIR_EAU =/mnt/data/mnt/
+INDIR_MNT =/mnt/data/DONNEES_AUX/SRTM
+OUTDIR_MNT=/mnt/data/mnt
+INDIR_EAU=/mnt/data/DONNEES_AUX/masque_eau
+OUTDIR_EAU =/mnt/data/mnt
 ```
 
 MNT means DTM and EAU means water
