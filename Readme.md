@@ -41,18 +41,39 @@ It also needs a file site. An example is provided : CVersailles.txt, which was u
 - proj is the projection name, 
 - EPSG_OUT, is the EPSG code of the projection, 
 - chaine_proj is the string to use to define it in gdal commands
-- The 4 values can stay equal to zero to produce only one tile. They can be integers if you want to generate a grid of tiles.
+ - you may find the information in the xml file provided with a granule :
+    ```
+      <HORIZONTAL_CS_NAME>WGS84 / UTM zone 32N</HORIZONTAL_CS_NAME>
+      <HORIZONTAL_CS_CODE>EPSG:32632</HORIZONTAL_CS_CODE>
+    ```
+- The 4 values can stay equal to zero to produce only one tile. They can be integers if you want to generate a grid of tiles. For Sentinel-2 only produce one tile at a time.
 
       tx_min=0
       ty_min=0
       tx_max=0
       ty_max=0
 
-- pas_x and pas_y are the spacing between tiles
-- orig_x and orig_y are the coordinates of the upper left corner (sorry for that)
+- pas_x and pas_y are the image size in m. Please keep the same values as below.
+- orig_x and orig_y are the coordinates of the upper left corner in m (gdalinfo can provide the information)
 - marge is the size of the overlap region between tiles
-  	For Sentinel-2, the margin is 9980 m
+  	For Sentinel-2, the margin is 0 as we produce DTM tile by tile due to the complex naming of tiles...
 
+Here is an example for tile 32TSNE (in Tunisia)
+
+```
+proj=UTM32N
+EPSG_out=32632
+chaine_proj=EPSG:32632
+tx_min=0
+ty_min=0
+tx_max=0
+ty_max=0
+pas_x=109800
+pas_y=109800
+orig_x=499980
+orig_y=4000020
+marge=0
+```
 
 # Sentinel-2
 
