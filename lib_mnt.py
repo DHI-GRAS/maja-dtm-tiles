@@ -498,6 +498,8 @@ def calcul_pente_aspect_mem(rac_mnt,dz_dc,dz_dl):
     slope =np.arctan(norme)
     aspect=np.where(dz_dc>0,np.arccos(dz_dl/norme),2*np.pi-np.arccos(dz_dl/norme)) 
     aspect=np.where(slope==0,0,aspect)
+    slope  = np.where(np.isfinite(slope), slope, 0)
+    aspect = np.where(np.isfinite(aspect), aspect, 0)
     
     (slope*100.) .astype('int16').tofile(rac_mnt+'.slope')
     (aspect*100.).astype('int16').tofile(rac_mnt+'.aspect')
