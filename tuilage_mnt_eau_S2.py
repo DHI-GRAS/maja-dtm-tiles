@@ -51,7 +51,7 @@ else:
 	parser.add_option("-m", "--mnt", dest="mnt", action="store", type="choice", \
 			help="SRTM ou PO (Planet Observer)", choices=['SRTM','PO'],default=None)
 	parser.add_option("-c", dest="COARSE_RES", action="store", type="int",  \
-			help="Coarse resolution", default=None)	
+			  help="Coarse resolution", default=240)	
 	parser.add_option("-e", dest="eau_seulement", action="store_true",  \
 			help="Traitement des masques d'eau seulement")
 	parser.add_option("-n", dest="sans_numero", action="store_true",  \
@@ -61,7 +61,6 @@ else:
 	parser.check_required("-p")
 	parser.check_required("-s")
 	parser.check_required("-m")
-	parser.check_required("-c")
 
 
 # lecture du fichier de paramètres et du fichier site
