@@ -9,7 +9,20 @@ from lib_mnt import *
 from osgeo import gdal,osr 	
 import sys
 
+import optparse
 
+
+###########################################################################
+class OptionParser (optparse.OptionParser):
+ 
+    def check_required (self, opt):
+      option = self.get_option(opt)
+ 
+      # Assumes the option's 'default' is set to None!
+      if getattr(self.values, option.dest) is None:
+          self.error("%s option not supplied" % option)
+
+###########################################################################
 
 def gdalinfo(fic_mnt_in):
     ds=gdal.Open(fic_mnt_in)
@@ -30,6 +43,7 @@ def gdalinfo(fic_mnt_in):
 
     return(proj,ulx,uly,resx,resy,nbCol,nbLig,moyenne,ecart)
 
+###########################################################################
 
 def writeHDR(hdr_out,tuile,proj,ulx,uly,resx,resy,nbCol,nbLig,moyenne,ecart) :
     hdr_template="MAJA_HDR_TEMPLATE.HDR"
@@ -79,15 +93,36 @@ def writeHDR(hdr_out,tuile,proj,ulx,uly,resx,resy,nbCol,nbLig,moyenne,ecart) :
 
 ########## Main
 
-if len(sys.argv)!=3 :
-    print "Usage   : python %s tile input_directory"%sys.argv[0]
-    print "Example : python %s 32SNE mnt/32SNE"%sys.argv[0]
+if len(sys.argv)==1  :
+    prog = os.path.basename(sys.argv[0])
+    print '      '+sys.argv[0]+' [options]'
+    print "       Help : ", prog, " --help"
+    print "       Or : ", prog, " -h"
+    print "example : python %s -t 34LGJ -f mnt/34LGJ"%sys.argv[0]
     sys.exit(-1)
+else:
+    usage = "usage: %prog [options] "
+    parser = OptionParser(usage=usage)
+    parser.set_defaults(eau_seulement=False)
+    parser.set_defaults(sans_numero=False)
     
+    parser.add_option("-t", "--tile", dest="tile", action="store", type="string", \
+                      help="tile name",default=None)
+    parser.add_option("-f", "--folder", dest="folder", action="store", type="string", \
+                      help="folder where the DTM willbe found", default=None)
+    parser.add_option("-c", dest="coarse_res", action="store", type="int",  \
+                      help="Coarse resolution", default=240)	
+    
+    (options, args) = parser.parse_args()
+    parser.check_required("-t")
+    parser.check_required("-f")
+
 #inputs :
-tuile=sys.argv[1]
-rep_mnt_in=sys.argv[2]
+tuile=options.tile
+rep_mnt_in=options.folder
+coarse=options.coarse_res
 fic_mnt_in=glob.glob(rep_mnt_in+'/'+'*_10m.mnt')[0]
+
 
 # creation of output directory
 rep_mnt_out="S2__TEST_AUX_REFDE2_T%s_0001"%tuile
@@ -109,8 +144,9 @@ writeHDR(hdr_out,tuile,proj,ulx,uly,resx,resy,nbCol,nbLig,moyenne,ecart)
 
 
 
+
 # now prepare binary file
-resolutions=[10,20,240]
+resolutions=[10,20,coarse]
 
 
 # Altitude 10m, 20m, 240m
@@ -156,7 +192,7 @@ suff_proto="eau"
 suff_MAJA="MSK"
 base_in=fic_mnt_in
 rac_out=dbl_dir_out+'/'+rep_mnt_out
-res=240
+res=coarse
 nom_in=base_in.replace("_10m.mnt","_%sm.%s"%(res,suff_proto))
 nom_out=rac_out+"_%s.TIF"%suff_MAJA                           
 commande="gdal_translate -of GTIFF  %s %s"%(nom_in,nom_out)
