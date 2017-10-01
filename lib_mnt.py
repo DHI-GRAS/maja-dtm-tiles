@@ -4,8 +4,40 @@
 import os, os.path, shutil
 import numpy as np
 import scipy.ndimage as nd
-from osgeo import gdal
+from osgeo import gdal,ogr,osr
 import glob
+
+#Returns true if coorinate is land
+def TestLand(lon,lat):
+
+    latlon = osr.SpatialReference()
+    latlon.ImportFromEPSG(4326)
+
+    #create a point
+    
+    pt = ogr.Geometry(ogr.wkbPoint)
+    pt.SetPoint_2D(0, lon, lat)
+
+    # read shapefile
+    shapefile = "land_polygons_osm/simplified_land_polygons.shp"
+    driver = ogr.GetDriverByName("ESRI Shapefile")
+    dataSource = driver.Open(shapefile, 0)
+    layer = dataSource.GetLayer()
+    targetProj = layer.GetSpatialRef()
+    land=False
+
+    #conversion to shapefile projection
+    transform = osr.CoordinateTransformation(latlon, targetProj)
+    pt.Transform(transform)
+    
+    #search point in layers
+    for feature in layer:
+        geom = feature.GetGeometryRef()
+        if geom.Contains(pt) :
+            land=True
+            break
+        
+    return land
 
 ##################################### Lecture de fichier de parametres "Mot_clé=Valeur"
 def lire_param_txt(fic_txt):
@@ -267,8 +299,6 @@ class classe_mnt :
 	#############################################################
 
 
-
-
 	def calcul_pente_aspect_fic(self):
 	    rac_mnt   = self.racine+'_'+str(self.res) +'m'
     	    print rac_mnt
@@ -294,7 +324,7 @@ class classe_mnt :
 	    (aspect*100.).astype('int16').tofile(rac_mnt+'.aspect')
 
 
-        #############################################################
+    #############################################################
 	########################Calcul_eau_mnt#######################
 	#############################################################
 
@@ -322,7 +352,7 @@ class classe_mnt :
 	    shutil.copy(fic_hdr_mnt,fic_hdr_eau)
 
 
-        #############################################################
+    #############################################################
 	########################Decoupage EAU########################
 	#############################################################
 
