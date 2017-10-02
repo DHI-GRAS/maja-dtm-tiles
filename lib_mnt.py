@@ -7,7 +7,7 @@ import scipy.ndimage as nd
 from osgeo import gdal,ogr,osr
 import glob
 
-#Returns true if coorinate is land
+#Returns true if coordinate is land
 def TestLand(lon,lat):
 
     latlon = osr.SpatialReference()
@@ -368,102 +368,12 @@ class classe_mnt :
 	    os.system(commande)
 
  
-########################################################################
-###########################Fusion des Mnt CGIAR ########################
-########################################################################"""
-def fusion_srtm(liste_fic_srtm,liste_fic_eau,rep_srtm,rep_swbd,nom_site) :
-        for fic in liste_fic_srtm:
-	    if not (os.path.exists(rep_srtm+'/'+fic)):
-		ficzip=fic.replace('tif','zip')
-		commande = "unzip -o %s/%s -d %s"%(rep_srtm,ficzip,rep_srtm)
-		os.system(commande)
-	if len(liste_fic_srtm)>1:
-		nom_mnt=rep_srtm+"/mnt_"+nom_site+".tif"
-		commande="gdal_merge.py -o "+ nom_mnt
-		for fic_srtm in liste_fic_srtm:
-			commande=commande+" "+rep_srtm+fic_srtm+" "
-		if os.path.exists(nom_mnt):
-			os.remove(nom_mnt)
-		print commande
-		os.system(commande)
-	
-	elif len(liste_fic_srtm)==1: 
-		nom_mnt=rep_srtm+liste_fic_srtm[0]
-	else :
-		print "liste_fichiers_srtm est vide"
-		raise ("ErreurDeParametreSite")
-	
-	########################on créé aussi le mnt avec no_data=0
-	nom_mnt_nodata0=nom_mnt.replace(".tif","nodata0.tif")
-	commande='gdalwarp  -r cubic -srcnodata -32768 -dstnodata 0  %s %s\n'% (nom_mnt,nom_mnt_nodata0)
-	print commande
-	os.system(commande)
-
-    #Create an empty file with same footprint as mnt mosaic
-    ####################################################################################
-    nom_raster_swbd=rep_swbd+'/'+os.path.basename(nom_mnt).split('.tif')[0]+"_tmp.tif"
-    if os.path.exists(nom_raster_swbd):
-        os.remove(nom_raster_swbd)   
-    ds=gdal.Open(nom_mnt)
-    driver = gdal.GetDriverByName('GTiff')
-    ds_out = driver.CreateCopy(nom_raster_swbd, ds, 0 )
-    inband  = ds.GetRasterBand(1)
-    outband = ds_out.GetRasterBand(1)
-    for i in range(inband.YSize - 1, -1, -1):
-       scanline = inband.ReadAsArray(0, i, inband.XSize, 1, inband.XSize, 1)
-       scanline = scanline*0
-       outband.WriteArray(scanline, 0, i)
-    ds_out=None
-
-    #remplissage de ce fichier avec les fichiers SWBD
-	#liste_tuiles_manquantes=["e017n03","e006n30","e006n29","e005n30","e005n29","e015n00","e015s24","e022n28","e023n28","w074n01","e034n02","e035n02"]
-    for racine_nom_eau in liste_fic_eau:
-        print racine_nom_eau
-        shp = glob.glob(rep_swbd+'/'+racine_nom_eau+"*.shp")
-        if len(shp) == 0:
-            print '*** Missing SWBD water file : ', racine_nom_eau
-            fic_vecteur_eau=rep_swbd+'/'+racine_nom_eau+".gml"
-            #compute center coordinates from missing SWBD tile
-            EW=racine_nom_eau[0]
-            lon=float(racine_nom_eau[1:4])
-            NS=racine_nom_eau[4]
-            lat=float(racine_nom_eau[5:7])
-            if EW="e":
-                lon=lon+0.5
-            else:
-                lon=-lon+0.5
-            if EW="n":
-                lat=lat+0.5
-            else:
-                lat=-lat+0.5
-
-            #test if center is water or land
-            land=TestLand(lon,lat)
-            if land :
-                valeur=0
-            else:
-                valeur=1
-                
-            creer_fichier_eau(fic_vecteur_eau,racine_nom_eau)
-
-        else:
-            fic_vecteur_eau = shp[0]
-            # in faut recuperer pour la couche le nom complet (y compris la lettre indiquant le continent)
-            racine_nom_eau = os.path.basename(fic_vecteur_eau)[:-4]
-
-        # add tile in output fused water mask
-        commande="gdal_rasterize -burn %d -l %s %s %s"%(valeur,racine_nom_eau,fic_vecteur_eau,nom_raster_swbd)
-        print "#############Fichier eau :",fic_vecteur_eau
-        print commande
-        os.system(commande)
-
-	return nom_mnt_nodata0,nom_raster_swbd
 
 
 #################################################################################
-###########################Fusion des Mnt Planet Observer########################
-##########################################################################
-def fusion_mnt(liste_fic_mnt,liste_fic_eau,rep_mnt,rep_swbd,nom_site,calcul_eau_mnt) :
+########################### Fusion DEM and water masks   ########################
+#################################################################################
+def fusion_mnt(liste_fic_mnt,liste_fic_eau,liste_centre_eau,rep_mnt,rep_swbd,nom_site,calcul_eau_mnt) :
         print liste_fic_mnt
         for fic in liste_fic_mnt:
 	    print rep_mnt+'/'+fic
@@ -513,24 +423,28 @@ def fusion_mnt(liste_fic_mnt,liste_fic_eau,rep_mnt,rep_swbd,nom_site,calcul_eau_
 
 	    #remplissage de ce fichier avec les fichiers SWBD
 	    liste_tuiles_manquantes=["e017n03","e006n30","e006n29","e005n30","e005n29","e015n00","e015s24","e022n28","e023n28","w074n01","e034n02","e035n02"]
-	    for racine_nom_eau in liste_fic_eau:
-		    print racine_nom_eau
-		    shp = glob.glob(rep_swbd+'/'+racine_nom_eau+"*.shp")
-		    valeur=1
-		    if len(shp) == 0:
-			print 'pas de fichier eau : ', racine_nom_eau
-			fic_vecteur_eau=rep_swbd+'/'+racine_nom_eau+".gml"
-			if racine_nom_eau in liste_tuiles_manquantes :
-			    valeur=0
-			    # pour les tuiles manquantes à l'intérieur des terre, on fournit la valeur 0 (terre)
+	    for i,racine_nom_eau in enumerate(liste_fic_eau):
+                print racine_nom_eau
+                shp = glob.glob(rep_swbd+'/'+racine_nom_eau+"*.shp")
+                #if shp file does not exist
+                if len(shp) == 0:
+                    print 'pas de fichier eau : ', racine_nom_eau
 
+                    #test if center is water or land
+                    land=TestLand(liste_centre_eau[i][0],liste_centre_eau[i][1])
+                    if land :
+                        valeur=0
+                    else:
+                        valeur=1
+                    fic_vecteur_eau=rep_swbd+'/'+racine_nom_eau+".gml"
+                    if racine_nom_eau in liste_tuiles_manquantes :
 			creer_fichier_eau(fic_vecteur_eau,racine_nom_eau)
-
-		    else:
-			fic_vecteur_eau = shp[0]
-			# in faut recuperer pour la couche le nom complet (y compris la lettre indiquant le continent)
-			racine_nom_eau = os.path.basename(fic_vecteur_eau)[:-4]
-		    commande="gdal_rasterize -burn %d -l %s %s %s"%(valeur,racine_nom_eau,fic_vecteur_eau,nom_raster_swbd)
+                #if shp file exists        
+                else:
+                    fic_vecteur_eau = shp[0]
+                    # il faut recuperer pour la couche le nom complet (y compris la lettre indiquant le continent)
+                    racine_nom_eau = os.path.basename(fic_vecteur_eau)[:-4]
+		    commande="gdal_rasterize -burn %d -l %s %s %s"%(1,racine_nom_eau,fic_vecteur_eau,nom_raster_swbd)
 		    print "#############Fichier eau :",fic_vecteur_eau
 		    print commande
 		    os.system(commande)

@@ -134,7 +134,7 @@ elif options.mnt=="PO":
 	    else:
 		ns="s"
 		num_y=-y
-	    liste_fic_mnt.append("%s%03d/%s%02d.dt1"%(ew,num_x,ns,num_y))
+            liste_fic_mnt.append("%s%03d/%s%02d.dt1"%(ew,num_x,ns,num_y))
 
     print ul_latlon,lr_latlon
     print ul_latlon_po,lr_latlon_po
@@ -155,6 +155,7 @@ if (ul_latlon[1]) >60 or (lr_latlon[1]>60) :
 	calcul_masque_eau_mnt=1
 
 liste_fic_eau=[]
+liste_centre_eau=[]
 for x in range(ul_latlon_swbd[0],lr_latlon_swbd[0]+1):
     for y in range(lr_latlon_swbd[1],ul_latlon_swbd[1]+1):
 	if x>=0:
@@ -170,19 +171,23 @@ for x in range(ul_latlon_swbd[0],lr_latlon_swbd[0]+1):
 	    ns="s"
 	    num_y=-y
 
-	    liste_fic_eau.append("%s%03d%s%02d"%(ew,num_x,ns,num_y))
+        liste_fic_eau.append("%s%03d%s%02d"%(ew,num_x,ns,num_y))
+        liste_centre_eau.append([x+0.5,y+0.5])
 
-
+print "longitudes",ul_latlon_swbd[0],lr_latlon_swbd[0]
+print "latitudes",lr_latlon_swbd[1],ul_latlon_swbd[1]
+print "center coordinates", liste_centre_eau
 print liste_fic_eau
 
+
 # Fusion des mnt_srtm en un seul
-(fic_mnt_in,fic_eau_in) = fusion_mnt(liste_fic_mnt, liste_fic_eau, rep_mnt_in, rep_swbd,site.nom,calcul_masque_eau_mnt)
+(fic_mnt_in,fic_eau_in) = fusion_mnt(liste_fic_mnt, liste_fic_eau, liste_centre_eau, rep_mnt_in, rep_swbd,site.nom,calcul_masque_eau_mnt)
 print "############",fic_mnt_in
 
 ####################Boucle de création des fichiers MNT et eau pour chaque tuile
 
 for tx in range(site.tx_min, site.tx_max + 1):
-	for ty in range(site.ty_min, site.ty_max + 1):
+    for ty in range(site.ty_min, site.ty_max + 1):
 	    ulx = site.orig_x + tx * site.pas_x #upper left
 	    uly = site.orig_y + ty * site.pas_y
 	    lrx = site.orig_x + (tx + 1) * site.pas_x + site.marge  #lower left
