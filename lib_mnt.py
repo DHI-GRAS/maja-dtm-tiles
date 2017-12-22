@@ -394,7 +394,7 @@ def fusion_mnt(liste_fic_mnt,liste_fic_eau,liste_centre_eau,rep_mnt,rep_swbd,nom
 	elif len(liste_fic_mnt)==1: 
 	    nom_mnt=rep_mnt+liste_fic_mnt[0]
 	else :
-	    print "liste_fic_mnt est vide"
+	    print "liste_fic_mnt is empty"
 	    raise ("ErreurDeParametreSite")
 	
 	########################on créé aussi le mnt avec no_data=0
@@ -428,26 +428,28 @@ def fusion_mnt(liste_fic_mnt,liste_fic_eau,liste_centre_eau,rep_mnt,rep_swbd,nom
                 shp = glob.glob(rep_swbd+'/'+racine_nom_eau+"*.shp")
                 #if shp file does not exist
                 if len(shp) == 0:
-                    print 'pas de fichier eau : ', racine_nom_eau
+                    print 'missing SWBD watr file : ', racine_nom_eau
 
                     #test if center is water or land
                     land=TestLand(liste_centre_eau[i][0],liste_centre_eau[i][1])
                     if land :
                         valeur=0
+                        print "it is a fully land tile"
                     else:
                         valeur=1
+                        print "it is a fully water tile"
                     fic_vecteur_eau=rep_swbd+'/'+racine_nom_eau+".gml"
-                    if racine_nom_eau in liste_tuiles_manquantes :
-			creer_fichier_eau(fic_vecteur_eau,racine_nom_eau)
+                    creer_fichier_eau(fic_vecteur_eau,racine_nom_eau)
                 #if shp file exists        
                 else:
+                    valeur=1
                     fic_vecteur_eau = shp[0]
                     # il faut recuperer pour la couche le nom complet (y compris la lettre indiquant le continent)
                     racine_nom_eau = os.path.basename(fic_vecteur_eau)[:-4]
-		    commande="gdal_rasterize -burn %d -l %s %s %s"%(1,racine_nom_eau,fic_vecteur_eau,nom_raster_swbd)
-		    print "#############Fichier eau :",fic_vecteur_eau
-		    print commande
-		    os.system(commande)
+                commande="gdal_rasterize -burn %d -l %s %s %s"%(valeur,racine_nom_eau,fic_vecteur_eau,nom_raster_swbd)
+                print "#############Fichier eau :",fic_vecteur_eau
+                print commande
+                os.system(commande)
 	else :
 	    nom_raster_swbd=""
 	return nom_mnt_nodata0,nom_raster_swbd
@@ -506,7 +508,7 @@ def creer_fichier_eau(fic_eau,nom_eau) :
     patron=patron.replace('NOMEAU',nom_eau)
 
     print fic_eau
-    print patron
+    #print patron
     f=file(fic_eau,"w")
     f.write(patron)
     f.close()
