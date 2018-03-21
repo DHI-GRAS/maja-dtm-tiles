@@ -14,7 +14,7 @@ def TestLand(lon,lat):
     latlon.ImportFromEPSG(4326)
 
     #create a point
-    
+
     pt = ogr.Geometry(ogr.wkbPoint)
     pt.SetPoint_2D(0, lon, lat)
 
@@ -29,14 +29,14 @@ def TestLand(lon,lat):
     #conversion to shapefile projection
     transform = osr.CoordinateTransformation(latlon, targetProj)
     pt.Transform(transform)
-    
+
     #search point in layers
     for feature in layer:
         geom = feature.GetGeometryRef()
         if geom.Contains(pt) :
             land=True
             break
-        
+
     return land
 
 ##################################### Lecture de fichier de parametres "Mot_clé=Valeur"
@@ -93,7 +93,7 @@ def lire_fichier_site(fic_site):
 	    if ligne.find('pas_x')==0:
 		pas_x = int(ligne.split('=')[1])
 	    if ligne.find('pas_y')==0:
-		pas_y = int(ligne.split('=')[1])	    
+		pas_y = int(ligne.split('=')[1])
 	    if ligne.find('marge')==0:
 		marge = int(ligne.split('=')[1])
 	    if ligne.find('orig_x')==0:
@@ -134,7 +134,7 @@ def lire_entete_mnt(fic_hdr) :
             else :
                 print 'type %d non pris en compte'%type_envi
 
-            
+
     return (nb_lig, nb_col, type_donnee, endian)
 
 #################calcule le nom de la tuile
@@ -159,10 +159,10 @@ def calcule_nom_tuile(tx,ty,site,nom_site):
 
 
 
-    
 
- 
-    
+
+
+
 
 
 #############################################################
@@ -218,7 +218,7 @@ class classe_mnt :
 		commande='gdalwarp  -overwrite -r cubic -ot Float32 -srcnodata -32768 -dstnodata 0 -of ENVI -tr %d %d -te %s -t_srs %s %s %s\n'% (self.res,self.res,chaine_etendue,self.chaine_proj,fic_in,fic_out)
 		print commande
 		os.system(commande)
-		
+
 
 	def decoupe_int(self,fic_in,fic_out):
                 #calcul du mnt int
@@ -238,14 +238,14 @@ class classe_mnt :
 		fic_mnt    =rac_mnt +'.mnt'
 		fic_hdr_mnt_float=rac_mnt +'float.hdr'
 		fic_mnt_float    =rac_mnt +'float.mnt'
-		
+
 
 		#calcul du mnt int
 		self.decoupe_int(mnt_in,fic_mnt)
 
                 #calcul du mnt float
-		self.decoupe_float(mnt_in,fic_mnt_float)		
-		
+		self.decoupe_float(mnt_in,fic_mnt_float)
+
 		#ecriture des entetes babel
 		(nblig,nbcol,type_donnee,endian)=lire_entete_mnt(fic_hdr_mnt)
 
@@ -263,17 +263,17 @@ class classe_mnt :
 		rac_mnt      = self.racine+'_'+str(self.res) +'m'
 		fic_dz_dl    =rac_mnt +'float.dz_dl'
 		fic_dz_dc    =rac_mnt +'float.dz_dc'
-		
+
 		#rééch
 		self.decoupe_float(fic_dz_dl_srtm,fic_dz_dl)
 		self.decoupe_float(fic_dz_dc_srtm,fic_dz_dc)
-		
 
-		
+
+
 	###########################################################
 	######### calcul du gradient################################
 	###########################################################
-		
+
 	def calcul_gradient(self):
 	    rac_mnt   = self.racine+'_'+str(self.res) +'m'
 	    print rac_mnt
@@ -285,15 +285,15 @@ class classe_mnt :
 
 	    srtm=(np.fromfile(fic_mnt,type_donnee)).reshape(nblig,nbcol)
 	    Noyau_horizontal=np.array([	[-1,0,1],[-2,0,2],[-1,0,1]])
-	    Noyau_vertical  =np.array([	[1,2,1] ,[0,0,0] ,[-1,-2,-1]])		
-	    
+	    Noyau_vertical  =np.array([	[1,2,1] ,[0,0,0] ,[-1,-2,-1]])
+
 	    dz_dc=nd.convolve(srtm,Noyau_horizontal)/8./self.res
 	    dz_dl=nd.convolve(srtm,Noyau_vertical)/8./self.res
 
 	    dz_dl.tofile(fic_dz_dl)
 	    dz_dc.tofile(fic_dz_dc)
 	    return(fic_dz_dl,fic_dz_dc)
-    
+
 	#############################################################
 	########################Calcul_pentes########################
 	#############################################################
@@ -317,9 +317,9 @@ class classe_mnt :
 
 	    norme=np.sqrt((dz_dc)*(dz_dc)+(dz_dl)*(dz_dl))
 	    slope =np.arctan(norme)
-	    aspect=np.where(dz_dc>0,np.arccos(dz_dl/norme),2*np.pi-np.arccos(dz_dl/norme)) 
+	    aspect=np.where(dz_dc>0,np.arccos(dz_dl/norme),2*np.pi-np.arccos(dz_dl/norme))
 	    aspect=np.where(slope==0,0,aspect)
-	    
+
 	    (slope*100.) .astype('int16').tofile(rac_mnt+'.slope')
 	    (aspect*100.).astype('int16').tofile(rac_mnt+'.aspect')
 
@@ -332,14 +332,14 @@ class classe_mnt :
 	    rac_eau= self.racine+'_'+str(self.res) +'m'
 	    fic_hdr_eau = rac_eau +'.hdr'
 	    fic_eau    =rac_eau +'.eau'
-	    
+
 	    rac_mnt= rep+rac+'_'+str(self.res) +'m'
 	    fic_hdr_mnt = rac_mnt +'.hdr'
     	    fic_hdr_mnt_float = rac_mnt +'float.hdr'
 	    fic_mnt=rac_mnt +'float.mnt'
 	    fic_dz_dl = rac_mnt +'float.dz_dl'
 	    fic_dz_dc = rac_mnt +'float.dz_dc'
-	    
+
 	    (nblig,nbcol,type_donnee,endian)=lire_entete_mnt(fic_hdr_mnt_float)
 	    mnt=(np.fromfile(fic_mnt,type_donnee)).reshape(nblig,nbcol)
 	    dz_dl=(np.fromfile(fic_dz_dl,type_donnee)).reshape(nblig,nbcol)
@@ -360,14 +360,14 @@ class classe_mnt :
 	    rac_eau= self.racine+'_'+str(self.res) +'m'
 	    fic_hdr_eau=rac_eau +'.hdr'
 	    fic_eau    =rac_eau +'.eau'
-	    
+
 	    #calcul du mnt int
 	    chaine_etendue 	= str(self.ulx)+' '+str(self.lry)+' '+str(self.lrx)+' '+str(self.uly)
 	    commande='gdalwarp -overwrite  -r near -of ENVI -tr %d %d -te %s -t_srs %s %s %s\n'% (self.res,self.res,chaine_etendue,self.chaine_proj,eau_in,fic_eau)
 	    print commande
 	    os.system(commande)
 
- 
+
 
 
 #################################################################################
@@ -383,20 +383,21 @@ def fusion_mnt(liste_fic_mnt,liste_fic_eau,liste_centre_eau,rep_mnt,rep_swbd,nom
 		os.system(commande)
 	if len(liste_fic_mnt)>1:
 	    nom_mnt=rep_mnt+"/mnt_"+nom_site+".tif"
-	    commande="gdal_merge.py -o "+ nom_mnt
+	    commande="rio merge"
 	    for fic_mnt in liste_fic_mnt:
-		commande=commande+" "+rep_mnt+fic_mnt+" "
+		commande=commande+" "+rep_mnt + '/' + fic_mnt+" "
+            commande += ' ' + nom_mnt
 	    if os.path.exists(nom_mnt):
 		os.remove(nom_mnt)
 	    print commande
 	    os.system(commande)
-	
-	elif len(liste_fic_mnt)==1: 
+
+	elif len(liste_fic_mnt)==1:
 	    nom_mnt=rep_mnt+liste_fic_mnt[0]
 	else :
 	    print "liste_fic_mnt is empty"
 	    raise ("ErreurDeParametreSite")
-	
+
 	########################on créé aussi le mnt avec no_data=0
 	nom_mnt_nodata0=nom_mnt.replace(".tif","nodata0.tif")
 	commande='gdalwarp  -r cubic -srcnodata -32767 -dstnodata 0  %s %s\n'% (nom_mnt,nom_mnt_nodata0)
@@ -404,12 +405,12 @@ def fusion_mnt(liste_fic_mnt,liste_fic_eau,liste_centre_eau,rep_mnt,rep_swbd,nom
 	os.system(commande)
 
 	if calcul_eau_mnt==0 : # si on est en deça de 60°N
-	    
+
 	    # Création d'un fichier vide (valeurs à 0) avec la même emprise que le mnt fusionnné
 	    ####################################################################################
 	    nom_raster_swbd=rep_swbd+'/'+os.path.basename(nom_mnt).split('.tif')[0]+"_tmp.tif"
 	    if os.path.exists(nom_raster_swbd):
-		os.remove(nom_raster_swbd)   
+		os.remove(nom_raster_swbd)
 	    ds=gdal.Open(nom_mnt)
 	    driver = gdal.GetDriverByName('GTiff')
 	    ds_out = driver.CreateCopy(nom_raster_swbd, ds, 0 )
@@ -440,7 +441,7 @@ def fusion_mnt(liste_fic_mnt,liste_fic_eau,liste_centre_eau,rep_mnt,rep_swbd,nom
                         print "it is a fully water tile"
                     fic_vecteur_eau=rep_swbd+'/'+racine_nom_eau+".gml"
                     creer_fichier_eau(fic_vecteur_eau,racine_nom_eau)
-                #if shp file exists        
+                #if shp file exists
                 else:
                     valeur=1
                     fic_vecteur_eau = shp[0]
@@ -460,16 +461,16 @@ def fusion_mnt(liste_fic_mnt,liste_fic_eau,liste_centre_eau,rep_mnt,rep_swbd,nom
 def calcul_pente_aspect_mem(rac_mnt,dz_dc,dz_dl):
     norme=np.sqrt((dz_dc)*(dz_dc)+(dz_dl)*(dz_dl))
     slope =np.arctan(norme)
-    aspect=np.where(dz_dc>0,np.arccos(dz_dl/norme),2*np.pi-np.arccos(dz_dl/norme)) 
+    aspect=np.where(dz_dc>0,np.arccos(dz_dl/norme),2*np.pi-np.arccos(dz_dl/norme))
     aspect=np.where(slope==0,0,aspect)
     slope  = np.where(np.isfinite(slope), slope, 0)
     aspect = np.where(np.isfinite(aspect), aspect, 0)
-    
+
     (slope*100.) .astype('int16').tofile(rac_mnt+'.slope')
     (aspect*100.).astype('int16').tofile(rac_mnt+'.aspect')
 
 ##############################################
-##############################################	
+##############################################
 def creer_fichier_eau(fic_eau,nom_eau) :
     patron="""<?xml version="1.0" encoding="utf-8" ?>
 <ogr:FeatureCollection
@@ -483,7 +484,7 @@ def creer_fichier_eau(fic_eau,nom_eau) :
       <gml:coord><gml:X>LONMAX.</gml:X><gml:Y>LATMAX.</gml:Y></gml:coord>
     </gml:Box>
   </gml:boundedBy>
-                        
+
   <gml:featureMember>
     <ogr:NOMEAU fid="F21">
       <ogr:geometryProperty><gml:Polygon><gml:outerBoundaryIs><gml:LinearRing><gml:coordinates>LONMIN.,LATMIN.,0 LONMAX.,LATMIN.,0  LONMAX.,LATMAX.,0 LONMIN.,LATMAX.,0 LONMIN.,LATMIN.,0 </gml:coordinates></gml:LinearRing></gml:outerBoundaryIs></gml:Polygon></ogr:geometryProperty>
