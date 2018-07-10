@@ -1,0 +1,10 @@
+name: maja-pf
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=2
+  - rasterio
+  - numpy
+  - scipy
+  - gdal

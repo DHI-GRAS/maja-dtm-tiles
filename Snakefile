@@ -24,10 +24,19 @@ OUTDIR_MNT={out}
 INDIR_EAU={swbd}
 OUTDIR_EAU={out}'''
 
+PF_BAT_STR = '''
+pushd "{pf_dir}"
+call activate maja-pf
+python tuilage_mnt_eau_S2.py -p "{paths_txt}" -s "{site_txt}" -m SRTM -c {coarse_res}
+python conversion_format_maja.py -t {tile} -f "{dem_dir}" -o "{outdir}"
+'''
+
 SRTM_BASE_URL = 'http://srtm.csi.cgiar.org/SRT-ZIP/SRTM_V41/SRTM_Data_GeoTiff/'
 
 SRTM_GEOJSON_PATH = os.path.join('static', 'srtm-world-wgs.geojson')
 
+# change this to produce output with different resolution
+COARSE_RES = 240
 
 tile = '32VNJ'
 
@@ -36,7 +45,8 @@ rule all:
         f'{tile}/SWBD',
         f'{tile}/SRTM',
         f'{tile}/site.txt',
-        f'{tile}/paths.txt'
+        f'{tile}/paths.txt',
+        f'{tile}/make-pf.bat'
 
 
 rule swbd:
@@ -102,4 +112,22 @@ rule paths_txt:
         paths = dict(srtm=input.srtm, swbd=input.swbd, out=output.outdir)
         paths_txt = PATHS_TXT.format(**paths)
         Path(output.pathsfile).write_text(paths_txt)
+        Path(output.outdir).mkdir(exist_ok=True, parents=True)
+
+
+rule make_pf_bat:
+    input:
+        paths_txt=rules.paths_txt.output.pathsfile,
+        dem_dir=rules.paths_txt.output.outdir,
+        site_txt=rules.site_txt.output
+    output:
+        batfile='{tile}/make-pf.bat',
+        outdir='{tile}/out'
+    run:
+        pf_dir = Path.cwd()
+        bat_str = PF_BAT_STR.format(
+            paths_txt=input.paths_txt, dem_dir=input.dem_dir, site_txt=input.site_txt,
+            pf_dir=pf_dir,
+            tile=wildcards.tile, outdir=output.outdir, coarse_res=COARSE_RES)
+        Path(output.batfile).write_text(bat_str)
         Path(output.outdir).mkdir(exist_ok=True, parents=True)
