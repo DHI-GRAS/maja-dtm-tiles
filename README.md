@@ -27,7 +27,7 @@ snakemake
 ```
 
 It will create a folder, e.g. `32UNG`, that contains the required files and a batch file
-for running the PF scripts. Run the batch file by clicking on
+for running the PF scripts. Run the batch file by executing (double-clicking)
 
 ```
 make-pf.bat
