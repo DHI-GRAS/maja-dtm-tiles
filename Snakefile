@@ -29,6 +29,7 @@ pushd "{pf_dir}"
 call activate maja-pf
 python tuilage_mnt_eau_S2.py -p "{paths_txt}" -s "{site_txt}" -m SRTM -c {coarse_res}
 python conversion_format_maja.py -t {tile} -f "{dem_dir}" -o "{outdir}"
+pause
 '''
 
 SRTM_BASE_URL = 'http://srtm.csi.cgiar.org/SRT-ZIP/SRTM_V41/SRTM_Data_GeoTiff/'
