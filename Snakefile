@@ -19,6 +19,11 @@ orig_x={ULX}
 orig_y={ULY}
 marge=0'''
 
+PATHS_TXT = '''INDIR_MNT={srtm}
+OUTDIR_MNT={out}
+INDIR_EAU={swbd}
+OUTDIR_EAU={out}'''
+
 SRTM_BASE_URL = 'http://srtm.csi.cgiar.org/SRT-ZIP/SRTM_V41/SRTM_Data_GeoTiff/'
 
 SRTM_GEOJSON_PATH = os.path.join('static', 'srtm-world-wgs.geojson')
@@ -30,7 +35,8 @@ rule all:
     input:
         f'{tile}/SWBD',
         f'{tile}/SRTM',
-        f'{tile}/site.txt'
+        f'{tile}/site.txt',
+        f'{tile}/paths.txt'
 
 
 rule swbd:
@@ -83,3 +89,17 @@ rule site_txt:
         site_txt = SITE_TXT.format(**gm['image_geoposition'][10])
         with open(str(output), 'w') as f:
             f.write(site_txt)
+
+
+rule paths_txt:
+    input:
+        srtm = rules.srtm.output,
+        swbd = rules.swbd.output
+    output: 
+        pathsfile='{tile}/paths.txt',
+        outdir='{tile}/maja_dem'
+    run:
+        paths = dict(srtm=input.srtm, swbd=input.swbd, out=output.outdir)
+        paths_txt = PATHS_TXT.format(**paths)
+        Path(output.pathsfile).write_text(paths_txt)
+        Path(output.outdir).mkdir(exist_ok=True, parents=True)
