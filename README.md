@@ -5,6 +5,35 @@ at full and coarse resolution. It also uses SRTM water bodies files to produce t
 A special version for MAJA is described at the end of the Readme file, together with a conversion tool to obtain the input format needed for *MAJA operational version*
 
 
+## Installation
+
+You need to create two `conda` environments:
+
+```
+conda env create -f environment-snakemake.yml
+conda env create -f environment-pommes-frites.yml
+```
+
+The first one is for running the Snakemake workflow that downloads SRTM and SWBD, 
+and the second one for running the PF scripts, that turn the former into food for MAJA.
+
+
+## Snakemake & conversion au format de MAJA
+
+Adapt the `tile` and `COARSE_RES` in the `Snakefile` to your needs and then run
+
+```
+snakemake
+```
+
+It will create a folder, e.g. `32UNG`, that contains the required files and a batch file
+for running the PF scripts. Run the batch file by clicking on
+
+```
+make-pf.bat
+```
+
+
 ## SRTM CGIAR files :
 The DTM tiles (by tiles of 5 degrees) can be fetched here http://srtm.csi.cgiar.org/SELECTION/inputCoord.asp
 More documentation on the product is avaiilable here : http://www.cgiar-csi.org/data/srtm-90m-digital-elevation-database-v4-1
