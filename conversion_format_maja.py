@@ -6,7 +6,7 @@ import os.path,glob,sys
 import numpy as np
 from lib_mnt import *
 
-from osgeo import gdal,osr 	
+from osgeo import gdal,osr
 import sys
 
 import optparse
@@ -14,10 +14,10 @@ import optparse
 
 ###########################################################################
 class OptionParser (optparse.OptionParser):
- 
+
     def check_required (self, opt):
       option = self.get_option(opt)
- 
+
       # Assumes the option's 'default' is set to None!
       if getattr(self.values, option.dest) is None:
           self.error("%s option not supplied" % option)
@@ -61,7 +61,7 @@ def writeHDR(hdr_out,tuile,proj,ulx,uly,resx,resy,nbCol,nbLig,moyenne,ecart) :
     proj="WGS 84 / UTM zone %s"%epsg_asc
 
     print proj,epsg
-    
+
     with file(hdr_out,"w") as fout:
         with file(hdr_template) as fin:
             lignes=fin.readlines()
@@ -77,11 +77,11 @@ def writeHDR(hdr_out,tuile,proj,ulx,uly,resx,resy,nbCol,nbLig,moyenne,ecart) :
                 elif lig.find("uly")>0:
                      lig=lig.replace("uly",str(int(uly)))
                 elif lig.find("resx")>0:
-                     lig=lig.replace("resx",str(int(resx)))                 
+                     lig=lig.replace("resx",str(int(resx)))
                 elif lig.find("resy")>0:
-                     lig=lig.replace("resy",str(int(resy)))  
+                     lig=lig.replace("resy",str(int(resy)))
                 elif lig.find("nbLig")>0:
-                     lig=lig.replace("nbLig",str(nbLig))  
+                     lig=lig.replace("nbLig",str(nbLig))
                 elif lig.find("nbCol")>0:
                     lig=lig.replace("nbCol",str(nbCol))
                 elif lig.find("meanAlt")>0:
@@ -89,7 +89,7 @@ def writeHDR(hdr_out,tuile,proj,ulx,uly,resx,resy,nbCol,nbLig,moyenne,ecart) :
                 elif lig.find("stdAlt")>0:
                      lig=lig.replace("stdAlt",str(ecart))
                 fout.write(lig)
-                
+
 
 ########## Main
 
@@ -105,14 +105,15 @@ else:
     parser = OptionParser(usage=usage)
     parser.set_defaults(eau_seulement=False)
     parser.set_defaults(sans_numero=False)
-    
+
     parser.add_option("-t", "--tile", dest="tile", action="store", type="string", \
                       help="tile name",default=None)
     parser.add_option("-f", "--folder", dest="folder", action="store", type="string", \
-                      help="folder where the DTM willbe found", default=None)
+                      help="folder where the DTM will be found", default=None)
     parser.add_option("-c", dest="coarse_res", action="store", type="int",  \
-                      help="Coarse resolution", default=240)	
-    
+                      help="Coarse resolution", default=240)
+    parser.add_option("-o", "--outdir", default=".", help="Output directory")
+
     (options, args) = parser.parse_args()
     parser.check_required("-t")
     parser.check_required("-f")
@@ -125,10 +126,10 @@ fic_mnt_in=glob.glob(rep_mnt_in+'/'+'*_10m.mnt')[0]
 
 
 # creation of output directory
-rep_mnt_out="S2__TEST_AUX_REFDE2_T%s_0001"%tuile
+rep_mnt_out = os.path.join(options.outdir, "S2__TEST_AUX_REFDE2_T%s_0001" % tuile)
 if not os.path.exists(rep_mnt_out):
     os.mkdir(rep_mnt_out)
-    
+
 hdr_out=rep_mnt_out+"/"+rep_mnt_out+".HDR"
 dbl_dir_out=rep_mnt_out+"/"+rep_mnt_out+".DBL.DIR"
 
@@ -156,11 +157,11 @@ base_in=fic_mnt_in
 rac_out=dbl_dir_out+'/'+rep_mnt_out
 for i,res in enumerate(resolutions):
     nom_in=base_in.replace("_10m.mnt","_%sm.%s"%(res,suff_proto))
-    nom_out=rac_out+"_%s.TIF"%suff_MAJA[i]                           
+    nom_out=rac_out+"_%s.TIF"%suff_MAJA[i]
     commande="gdal_translate -of GTIFF %s %s"%(nom_in,nom_out)
     print commande
     os.system(commande)
-                           
+
 
 # Slope 10m, 20m, 240m SLP_R1, SLP_R2, SLC
 suff_proto="slope"
@@ -169,7 +170,7 @@ base_in=fic_mnt_in
 rac_out=dbl_dir_out+'/'+rep_mnt_out
 for i,res in enumerate(resolutions):
     nom_in=base_in.replace("_10m.mnt","_%sm.%s"%(res,suff_proto))
-    nom_out=rac_out+"_%s.TIF"%suff_MAJA[i]                           
+    nom_out=rac_out+"_%s.TIF"%suff_MAJA[i]
     commande="gdal_translate -of GTIFF %s %s"%(nom_in,nom_out)
     print commande
     os.system(commande)
@@ -182,7 +183,7 @@ base_in=fic_mnt_in
 rac_out=dbl_dir_out+'/'+rep_mnt_out
 for i,res in enumerate(resolutions):
     nom_in=base_in.replace("_10m.mnt","_%sm.%s"%(res,suff_proto))
-    nom_out=rac_out+"_%s.TIF"%suff_MAJA[i]                           
+    nom_out=rac_out+"_%s.TIF"%suff_MAJA[i]
     commande="gdal_translate -of GTIFF %s %s"%(nom_in,nom_out)
     print commande
     os.system(commande)
@@ -194,7 +195,7 @@ base_in=fic_mnt_in
 rac_out=dbl_dir_out+'/'+rep_mnt_out
 res=coarse
 nom_in=base_in.replace("_10m.mnt","_%sm.%s"%(res,suff_proto))
-nom_out=rac_out+"_%s.TIF"%suff_MAJA                           
+nom_out=rac_out+"_%s.TIF"%suff_MAJA
 commande="gdal_translate -of GTIFF  %s %s"%(nom_in,nom_out)
 print commande
 os.system(commande)
