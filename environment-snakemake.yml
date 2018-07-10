@@ -1,0 +1,17 @@
+name: maja-dem
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3
+  - requests
+  - lxml
+  - geopandas
+  - pyproj
+  - shapely
+  - datrie
+  - pip:
+    - sentinelsat
+    - snakemake
+    - https://github.com/DHI-GRAS/earthdata-download/archive/master.zip
+    - git+https://github.com/DHI-GRAS/satmeta.git
