@@ -126,12 +126,14 @@ fic_mnt_in=glob.glob(rep_mnt_in+'/'+'*_10m.mnt')[0]
 
 
 # creation of output directory
-rep_mnt_out = os.path.join(options.outdir, "S2__TEST_AUX_REFDE2_T%s_0001" % tuile)
+maja_name = "S2__TEST_AUX_REFDE2_T%s_0001" % tuile
+rep_mnt_out = os.path.join(options.outdir, maja_name)
+print('rep_mnt_out is {}'.format(rep_mnt_out))
 if not os.path.exists(rep_mnt_out):
     os.mkdir(rep_mnt_out)
 
-hdr_out=rep_mnt_out+"/"+rep_mnt_out+".HDR"
-dbl_dir_out=rep_mnt_out+"/"+rep_mnt_out+".DBL.DIR"
+hdr_out=rep_mnt_out+"/"+maja_name+".HDR"
+dbl_dir_out=rep_mnt_out+"/"+maja_name+".DBL.DIR"
 
 if not os.path.exists(dbl_dir_out):
     os.mkdir(dbl_dir_out)
@@ -154,7 +156,7 @@ resolutions=[10,20,coarse]
 suff_proto="mnt"
 suff_MAJA=["ALT_R1", "ALT_R2", "ALC"]
 base_in=fic_mnt_in
-rac_out=dbl_dir_out+'/'+rep_mnt_out
+rac_out=dbl_dir_out+'/'+maja_name
 for i,res in enumerate(resolutions):
     nom_in=base_in.replace("_10m.mnt","_%sm.%s"%(res,suff_proto))
     nom_out=rac_out+"_%s.TIF"%suff_MAJA[i]
@@ -167,7 +169,7 @@ for i,res in enumerate(resolutions):
 suff_proto="slope"
 suff_MAJA=["SLP_R1", "SLP_R2", "SLC"]
 base_in=fic_mnt_in
-rac_out=dbl_dir_out+'/'+rep_mnt_out
+rac_out=dbl_dir_out+'/'+maja_name
 for i,res in enumerate(resolutions):
     nom_in=base_in.replace("_10m.mnt","_%sm.%s"%(res,suff_proto))
     nom_out=rac_out+"_%s.TIF"%suff_MAJA[i]
@@ -180,7 +182,7 @@ for i,res in enumerate(resolutions):
 suff_proto="aspect"
 suff_MAJA=["ASP_R1", "ASP_R2", "ASC"]
 base_in=fic_mnt_in
-rac_out=dbl_dir_out+'/'+rep_mnt_out
+rac_out=dbl_dir_out+'/'+maja_name
 for i,res in enumerate(resolutions):
     nom_in=base_in.replace("_10m.mnt","_%sm.%s"%(res,suff_proto))
     nom_out=rac_out+"_%s.TIF"%suff_MAJA[i]
@@ -192,7 +194,7 @@ for i,res in enumerate(resolutions):
 suff_proto="eau"
 suff_MAJA="MSK"
 base_in=fic_mnt_in
-rac_out=dbl_dir_out+'/'+rep_mnt_out
+rac_out=dbl_dir_out+'/'+maja_name
 res=coarse
 nom_in=base_in.replace("_10m.mnt","_%sm.%s"%(res,suff_proto))
 nom_out=rac_out+"_%s.TIF"%suff_MAJA

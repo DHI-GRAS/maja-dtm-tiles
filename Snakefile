@@ -127,7 +127,7 @@ rule make_pf_bat:
     run:
         pf_dir = Path.cwd()
         bat_str = PF_BAT_STR.format(
-            paths_txt=input.paths_txt, dem_dir=input.dem_dir, site_txt=input.site_txt,
+            paths_txt=input.paths_txt, dem_dir=(input.dem_dir + 'site'), site_txt=input.site_txt,
             pf_dir=pf_dir,
             tile=wildcards.tile, outdir=output.outdir, coarse_res=COARSE_RES)
         Path(output.batfile).write_text(bat_str)
