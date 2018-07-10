@@ -28,7 +28,7 @@ PF_BAT_STR = '''
 pushd "{pf_dir}"
 call activate maja-pf
 python tuilage_mnt_eau_S2.py -p "{paths_txt}" -s "{site_txt}" -m SRTM -c {coarse_res}
-python conversion_format_maja.py -t {tile} -f "{dem_dir}" -o "{outdir}"
+python conversion_format_maja.py -t {tile} -f "{dem_dir}" -o "{outdir} -c {coarse_res}"
 pause
 '''
 
@@ -127,7 +127,8 @@ rule make_pf_bat:
     run:
         pf_dir = Path.cwd()
         bat_str = PF_BAT_STR.format(
-            paths_txt=input.paths_txt, dem_dir=(input.dem_dir + 'site'), site_txt=input.site_txt,
+            paths_txt=input.paths_txt, site_txt=input.site_txt,
+            dem_dir=(input.dem_dir + 'site'),  # NB: the extra 'site' is added somewhere in the PF scripts 
             pf_dir=pf_dir,
             tile=wildcards.tile, outdir=output.outdir, coarse_res=COARSE_RES)
         Path(output.batfile).write_text(bat_str)
