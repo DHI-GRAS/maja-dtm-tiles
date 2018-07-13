@@ -16,11 +16,11 @@ import optparse
 class OptionParser (optparse.OptionParser):
 
     def check_required (self, opt):
-      option = self.get_option(opt)
+        option = self.get_option(opt)
 
-      # Assumes the option's 'default' is set to None!
-      if getattr(self.values, option.dest) is None:
-          self.error("%s option not supplied" % option)
+        # Assumes the option's 'default' is set to None!
+        if getattr(self.values, option.dest) is None:
+            self.error("%s option not supplied" % option)
 
 ###########################################################################
 
@@ -56,38 +56,38 @@ def writeHDR(hdr_out,tuile,proj,ulx,uly,resx,resy,nbCol,nbLig,moyenne,ecart) :
         epsg="326%02d"%epsg_num
     else:
         epsg="327%d02"%epsg_num
-    print epsg
+    print(epsg)
 
     proj="WGS 84 / UTM zone %s"%epsg_asc
 
-    print proj,epsg
+    print(proj,epsg)
 
-    with file(hdr_out,"w") as fout:
-        with file(hdr_template) as fin:
+    with open(hdr_out,"w") as fout:
+        with open(hdr_template) as fin:
             lignes=fin.readlines()
             for lig in lignes:
                 if lig.find("tuile")>0:
-                     lig=lig.replace("tuile","T"+tuile)
+                    lig=lig.replace("tuile","T"+tuile)
                 elif lig.find("epsg")>0:
-                     lig=lig.replace("epsg",epsg)
+                    lig=lig.replace("epsg",epsg)
                 elif lig.find("proj")>0:
-                     lig=lig.replace("proj",proj)
+                    lig=lig.replace("proj",proj)
                 elif lig.find("ulx")>0:
-                     lig=lig.replace("ulx",str(int(ulx)))
+                    lig=lig.replace("ulx",str(int(ulx)))
                 elif lig.find("uly")>0:
-                     lig=lig.replace("uly",str(int(uly)))
+                    lig=lig.replace("uly",str(int(uly)))
                 elif lig.find("resx")>0:
-                     lig=lig.replace("resx",str(int(resx)))
+                    lig=lig.replace("resx",str(int(resx)))
                 elif lig.find("resy")>0:
-                     lig=lig.replace("resy",str(int(resy)))
+                    lig=lig.replace("resy",str(int(resy)))
                 elif lig.find("nbLig")>0:
-                     lig=lig.replace("nbLig",str(nbLig))
+                    lig=lig.replace("nbLig",str(nbLig))
                 elif lig.find("nbCol")>0:
                     lig=lig.replace("nbCol",str(nbCol))
                 elif lig.find("meanAlt")>0:
-                     lig=lig.replace("meanAlt",str(moyenne))
+                    lig=lig.replace("meanAlt",str(moyenne))
                 elif lig.find("stdAlt")>0:
-                     lig=lig.replace("stdAlt",str(ecart))
+                    lig=lig.replace("stdAlt",str(ecart))
                 fout.write(lig)
 
 
@@ -95,10 +95,10 @@ def writeHDR(hdr_out,tuile,proj,ulx,uly,resx,resy,nbCol,nbLig,moyenne,ecart) :
 
 if len(sys.argv)==1  :
     prog = os.path.basename(sys.argv[0])
-    print '      '+sys.argv[0]+' [options]'
-    print "       Help : ", prog, " --help"
-    print "       Or : ", prog, " -h"
-    print "example : python %s -t 34LGJ -f mnt/34LGJ"%sys.argv[0]
+    print('      '+sys.argv[0]+' [options]')
+    print("       Help : ", prog, " --help")
+    print("       Or : ", prog, " -h")
+    print("example : python %s -t 34LGJ -f mnt/34LGJ"%sys.argv[0])
     sys.exit(-1)
 else:
     usage = "usage: %prog [options] "
@@ -128,7 +128,7 @@ fic_mnt_in=glob.glob(rep_mnt_in+'/'+'*_10m.mnt')[0]
 # creation of output directory
 maja_name = "S2__TEST_AUX_REFDE2_T%s_0001" % tuile
 rep_mnt_out = os.path.join(options.outdir, maja_name)
-print('rep_mnt_out is {}'.format(rep_mnt_out))
+print(('rep_mnt_out is {}'.format(rep_mnt_out)))
 if not os.path.exists(rep_mnt_out):
     os.mkdir(rep_mnt_out)
 
@@ -161,7 +161,7 @@ for i,res in enumerate(resolutions):
     nom_in=base_in.replace("_10m.mnt","_%sm.%s"%(res,suff_proto))
     nom_out=rac_out+"_%s.TIF"%suff_MAJA[i]
     commande="gdal_translate -of GTIFF %s %s"%(nom_in,nom_out)
-    print commande
+    print(commande)
     os.system(commande)
 
 
@@ -174,7 +174,7 @@ for i,res in enumerate(resolutions):
     nom_in=base_in.replace("_10m.mnt","_%sm.%s"%(res,suff_proto))
     nom_out=rac_out+"_%s.TIF"%suff_MAJA[i]
     commande="gdal_translate -of GTIFF %s %s"%(nom_in,nom_out)
-    print commande
+    print(commande)
     os.system(commande)
 
 
@@ -187,7 +187,7 @@ for i,res in enumerate(resolutions):
     nom_in=base_in.replace("_10m.mnt","_%sm.%s"%(res,suff_proto))
     nom_out=rac_out+"_%s.TIF"%suff_MAJA[i]
     commande="gdal_translate -of GTIFF %s %s"%(nom_in,nom_out)
-    print commande
+    print(commande)
     os.system(commande)
 
 # Water Mask
@@ -199,8 +199,5 @@ res=coarse
 nom_in=base_in.replace("_10m.mnt","_%sm.%s"%(res,suff_proto))
 nom_out=rac_out+"_%s.TIF"%suff_MAJA
 commande="gdal_translate -of GTIFF  %s %s"%(nom_in,nom_out)
-print commande
+print(commande)
 os.system(commande)
-
-
-
