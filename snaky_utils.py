@@ -53,11 +53,14 @@ def get_parsed_granule_meta(auth, tile_name):
 def get_bbox_wgs(gm):
     bounds = gm['image_bounds'][10]
     fp = shapely.geometry.box(*bounds)
-    t = functools.partial(
-        pyproj.transform,
-        pyproj.Proj(init=gm['projection'].lower()),
-        pyproj.Proj(init='epsg:4326'))
-    fpwgs = shapely.ops.transform(t, fp)
+
+    def reproject(*coords):
+        return pyproj.transform(
+            pyproj.Proj(init=gm['projection'].lower()),
+            pyproj.Proj(init='epsg:4326'),
+            *coords
+        )
+    fpwgs = shapely.ops.transform(reproject, fp)
     return fpwgs
 
 

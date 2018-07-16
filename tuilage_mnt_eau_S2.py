@@ -86,7 +86,6 @@ lry_site = site.orig_y + (site.ty_min - 1) * site.pas_y - site.marge
 ul_latlon = transform.TransformPoint(ulx_site, uly_site,0)
 lr_latlon = transform.TransformPoint(lrx_site, lry_site,0)
 
-
 liste_fic_mnt=[]
 
 ############# MNT SRTM du CGIAR
@@ -98,12 +97,11 @@ if options.mnt=="SRTM":
         print("#################################################")
         sys.exit(-3)
 
-    ul_latlon_srtm = [int((ul_latlon[0]+180)/5)+1  ,int((60-ul_latlon[1])/5)+1]
-    lr_latlon_srtm = [int((lr_latlon[0]+180)/5)+1  ,int((60-lr_latlon[1])/5)+1]
-    print(ul_latlon_srtm, lr_latlon_srtm)
+    ul_latlon_srtm = [int(ul_latlon[0]+180)//5+1  ,int(60-ul_latlon[1])//5+1]
+    lr_latlon_srtm = [int(lr_latlon[0]+180)//5+1  ,int(60-lr_latlon[1])//5+1]
 
-    for x in range(ul_latlon_srtm[0],ul_latlon_srtm[1]+1):
-        for y in range(lr_latlon_srtm[0],lr_latlon_srtm[1]+1):
+    for x in range(ul_latlon_srtm[0],lr_latlon_srtm[0]+1):
+        for y in range(ul_latlon_srtm[1],lr_latlon_srtm[1]+1):
             liste_fic_mnt.append("srtm_%02d_%02d.tif"%(x,y))
 
     print(ul_latlon,lr_latlon)

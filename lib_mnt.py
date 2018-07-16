@@ -393,7 +393,7 @@ def fusion_mnt(liste_fic_mnt,liste_fic_eau,liste_centre_eau,rep_mnt,rep_swbd,nom
         os.system(commande)
 
     elif len(liste_fic_mnt)==1:
-        nom_mnt=rep_mnt+liste_fic_mnt[0]
+        nom_mnt=rep_mnt+'/'+liste_fic_mnt[0]
     else :
         print("liste_fic_mnt is empty")
         raise ("ErreurDeParametreSite")

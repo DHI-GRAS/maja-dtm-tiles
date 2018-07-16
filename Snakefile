@@ -4,13 +4,15 @@ import os
 from pathlib import Path
 import shutil
 
+import utm
+
 import snaky_utils
 
 SCIHUB_AUTH = ('josl', 'SciHubd0wn')
 
-SITE_TXT = '''proj=UTM32N
-EPSG_out=32632
-chaine_proj=EPSG:32632
+SITE_TXT = '''proj={proj_name}
+EPSG_out={projection}
+chaine_proj=EPSG:{projection}
 tx_min=0
 ty_min=0
 tx_max=0
@@ -26,13 +28,6 @@ OUTDIR_MNT={out}
 INDIR_EAU={swbd}
 OUTDIR_EAU={out}'''
 
-PF_BAT_STR = '''
-pushd "{pf_dir}"
-call activate maja-pf
-python tuilage_mnt_eau_S2.py -p "{paths_txt}" -s "{site_txt}" -m SRTM -c {coarse_res}
-python conversion_format_maja.py -t {tile} -f "{dem_dir}" -o "{outdir}" -c {coarse_res}
-pause
-'''
 
 SRTM_BASE_URL = 'http://srtm.csi.cgiar.org/SRT-ZIP/SRTM_V41/SRTM_Data_GeoTiff/'
 
@@ -58,17 +53,17 @@ rule swbd:
         gm = snaky_utils.get_parsed_granule_meta(auth=SCIHUB_AUTH, tile_name=wildcards.tile)
         extent = snaky_utils.get_bounds_wgs(gm)
         ee = query.get_entries(short_name='SRTMSWBD', extent=extent)
-        if not os.path.isdir(str(output)):
-            os.makedirs(str(output))
+        if not os.path.isdir(output[0]):
+            os.makedirs(output[0])
         try:
             for e in ee:
                 download.download_entry(
                     e, data_url_kw=dict(url_match='*.raw.zip'),
                     username='josl', password='ejoHDl$5AI!n',
-                    download_dir=str(output),
+                    download_dir=output[0],
                     skip_existing=True)
         except:
-            shutil.rmtree(str(output))
+            shutil.rmtree(output[0])
             raise
 
 
@@ -82,14 +77,11 @@ rule srtm:
         gm = snaky_utils.get_parsed_granule_meta(auth=SCIHUB_AUTH, tile_name=wildcards.tile)
         bbox = snaky_utils.get_bbox_wgs(gm)
         gdf = gpd.read_file(SRTM_GEOJSON_PATH)
-        print(bbox)
-        print(gdf.intersects(bbox))
-        print(gdf[gdf.intersects(bbox)])
         srtm_names = list(gdf[gdf.intersects(bbox)].filename.values)
         for name in srtm_names:
             fname = name + '.zip'
             url = SRTM_BASE_URL + fname
-            local_path = Path(str(output)) / fname
+            local_path = Path(output[0]) / fname
             local_path.parent.mkdir(exist_ok=True, parents=True)
             with requests.get(url, stream=True) as response:
                 response.raise_for_status()
@@ -102,8 +94,11 @@ rule site_txt:
     output: 'data/site/{tile}/site.txt'
     run:
         gm = snaky_utils.get_parsed_granule_meta(auth=SCIHUB_AUTH, tile_name=wildcards.tile)
-        site_txt = SITE_TXT.format(**gm['image_geoposition'][10])
-        with open(str(output), 'w') as f:
+        projection = gm['projection'].replace('EPSG:', '')
+        site_txt = SITE_TXT.format(projection=projection,
+                                   proj_name=projection,
+                                   **gm['image_geoposition'][10])
+        with open(output[0], 'w') as f:
             f.write(site_txt)
 
 
@@ -112,25 +107,48 @@ rule paths_txt:
         srtm = rules.srtm.output,
         swbd = rules.swbd.output
     output:
-        pathsfile = 'data/paths/{tile}/paths.txt',
-        outdir = directory('data/maja_dem/{tile}')
+        pathsfile = 'data/paths/{tile}/paths.txt'
     run:
-        paths = dict(srtm=input.srtm, swbd=input.swbd, out=output.outdir)
+        paths = dict(srtm=input.srtm, swbd=input.swbd, out=f'data/maja_dem/{wildcards.tile}')
         paths_txt = PATHS_TXT.format(**paths)
         Path(output.pathsfile).write_text(paths_txt)
-        Path(output.outdir).mkdir(exist_ok=True, parents=True)
 
 
 rule make_croissant:
     input:
-        rules.srtm.output,
-        rules.swbd.output,
+        ancient(rules.srtm.output),
+        ancient(rules.swbd.output),
         paths_txt = rules.paths_txt.output.pathsfile,
-        dem_dir = rules.paths_txt.output.outdir,
-        site_txt = rules.site_txt.output,
+        site_txt = rules.site_txt.output
     output:
-        outdir = directory('data/out/{tile}')
+        outdir = directory('data/maja_out/{tile}'),
+        dem_dir = directory('data/maja_dem/{tile}site')
     run:
         shell('python tuilage_mnt_eau_S2.py -p "{input.paths_txt}" -s "{input.site_txt}" -m SRTM -c {COARSE_RES}')
         os.makedirs(output.outdir, exist_ok=True)
-        shell('python conversion_format_maja.py -t {wildcards.tile} -f "{input.dem_dir}" -o "{output.outdir}" -c {COARSE_RES}')
+        shell('python conversion_format_maja.py -t {wildcards.tile} -f "{output.dem_dir}" -o "{output.outdir}" -c {COARSE_RES}')
+
+
+rule scatter_outputs:
+    input:
+        rules.make_croissant.output.outdir
+    output:
+        directory('data/out/{tile}')
+    run:
+        import glob
+        import shutil
+        import tarfile
+
+        input_folder = glob.glob(f'{input[0]}/S2__*/S2__*.DBL.DIR')
+        assert len(input_folder) == 1
+        input_folder = input_folder[0]
+
+        os.makedirs(output[0], exist_ok=True)
+        outname = os.path.basename(input_folder).replace('.DBL.DIR', '')
+        with tarfile.open(f'{output[0]}/{outname}.DBL', 'w') as archive:
+            archive.add(input_folder, arcname=f'{outname}.DBL.DIR', recursive=True)
+
+        input_hdrfile = glob.glob(f'{input[0]}/S2__*/S2__*.HDR')
+        assert len(input_hdrfile) == 1
+        input_hdrfile = input_hdrfile[0]
+        shutil.copy(input_hdrfile, f'{output[0]}/{outname}.HDR')
