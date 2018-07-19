@@ -34,7 +34,7 @@ SRTM_BASE_URL = 'http://srtm.csi.cgiar.org/SRT-ZIP/SRTM_V41/SRTM_Data_GeoTiff/'
 SRTM_GEOJSON_PATH = os.path.join('static', 'srtm-world-wgs.geojson')
 
 # change this to produce output with different resolution
-COARSE_RES = 120
+COARSE_RES = 240
 
 tiles = config['tiles']
 
@@ -92,6 +92,8 @@ rule srtm:
 
 rule site_txt:
     output: 'data/site/{tile}/site.txt'
+    resources:
+        swbd_conn = 1
     run:
         gm = snaky_utils.get_parsed_granule_meta(auth=SCIHUB_AUTH, tile_name=wildcards.tile)
         projection = gm['projection'].replace('EPSG:', '')
