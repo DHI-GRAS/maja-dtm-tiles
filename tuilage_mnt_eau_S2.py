@@ -168,9 +168,6 @@ for x in range(ul_latlon_swbd[0],lr_latlon_swbd[0]+1):
         liste_fic_eau.append("%s%03d%s%02d"%(ew,num_x,ns,num_y))
         liste_centre_eau.append([x+0.5,y+0.5])
 
-
-print(liste_fic_eau)
-
 print("longitudes",ul_latlon_swbd[0],lr_latlon_swbd[0])
 print("latitudes",lr_latlon_swbd[1],ul_latlon_swbd[1])
 print("center coordinates", liste_centre_eau)

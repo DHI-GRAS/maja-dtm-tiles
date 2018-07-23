@@ -30,6 +30,7 @@ OUTDIR_EAU={out}'''
 
 
 SRTM_BASE_URL = 'http://srtm.csi.cgiar.org/SRT-ZIP/SRTM_V41/SRTM_Data_GeoTiff/'
+SWBD_BASE_URL = 'https://dds.cr.usgs.gov/srtm/version2_1/SWBD'
 
 SRTM_GEOJSON_PATH = os.path.join('static', 'srtm-world-wgs.geojson')
 
@@ -48,20 +49,36 @@ rule swbd:
         swbd_conn = 1
     output: directory('data/SWBD/{tile}')
     run:
-        from earthdata_download import download
-        from earthdata_download import query
+        from io import BytesIO
+        import zipfile
+        import requests
         gm = snaky_utils.get_parsed_granule_meta(auth=SCIHUB_AUTH, tile_name=wildcards.tile)
         extent = snaky_utils.get_bounds_wgs(gm)
-        ee = query.get_entries(short_name='SRTMSWBD', extent=extent)
-        if not os.path.isdir(output[0]):
-            os.makedirs(output[0])
+
+        ul_latlon_swbd = [int(extent['xmin']), int(extent['ymax'])]
+        lr_latlon_swbd = [int(extent['xmax']), int(extent['ymin'])]
+
         try:
-            for e in ee:
-                download.download_entry(
-                    e, data_url_kw=dict(url_match='*.raw.zip'),
-                    username='josl', password='ejoHDl$5AI!n',
-                    download_dir=output[0],
-                    skip_existing=True)
+            os.makedirs(output[0], exist_ok=True)
+            for x in range(ul_latlon_swbd[0], lr_latlon_swbd[0] + 1):
+                for y in range(lr_latlon_swbd[1], ul_latlon_swbd[1] + 1):
+                    ew = 'w' if x < 0 else 'e'
+                    ns = 's' if y < 0 else 'n'
+
+                    swbd_name = f'{ew}{abs(x):0>3d}{ns}{abs(y):0>2d}'
+                    swbd_folder = 'SWBDeast' if ew == 'e' else 'SWBDwest'
+
+                    for continent_code in ('a', 'e', 'f', 'i', 'n', 's'):
+                        url = f'{SWBD_BASE_URL}/{swbd_folder}/{swbd_name}{continent_code}.zip'
+                        with requests.get(url, stream=True) as response:
+                            if response.status_code != 200:
+                                continue
+                            local_path = os.path.join(output[0], f'{swbd_name}{continent_code}.zip')
+                            with zipfile.ZipFile(BytesIO(response.content)) as archive:
+                                archive.extractall(path=output[0])
+                            break
+                    else:
+                        print(f'could not find valid URL for {swbd_name}')
         except:
             shutil.rmtree(output[0])
             raise
