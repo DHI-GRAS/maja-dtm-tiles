@@ -35,7 +35,7 @@ SWBD_BASE_URL = 'https://dds.cr.usgs.gov/srtm/version2_1/SWBD'
 SRTM_GEOJSON_PATH = os.path.join('static', 'srtm-world-wgs.geojson')
 
 # change this to produce output with different resolution
-COARSE_RES = 240
+COARSE_RES = config['coarse_res']
 
 tiles = config['tiles']
 
